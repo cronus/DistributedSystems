@@ -5,7 +5,7 @@ import (
     "io/ioutil"
     "os"
     "encoding/json"
-    "fmt"
+//    "fmt"
 )
 
 func doMap(
@@ -58,21 +58,28 @@ func doMap(
 	// Your code here (Part I).
 	//
 
-    fmt.Println("Start goMap")
+//    fmt.Printf("Start goMap: nReduce %d\n", nReduce)
 
-    dat, _  := ioutil.ReadFile(inFile)
-    keyValues := mapF(inFile, string(dat));
+    var dat []byte
+    var kvs []KeyValue
+    var intermdtFileName string
+    var intermdtFd *os.File
+
+    dat, _ = ioutil.ReadFile(inFile)
+    kvs    = mapF(inFile, string(dat))
     //fmt.Println(keyValues)
+
     for r := 0; r < nReduce; r++ {
-        intermdtName := reduceName(jobName, mapTask, r)
-        ioWriter, _ := os.Create(intermdtName)
-	    enc := json.NewEncoder(ioWriter)
-	    for _, kv := range keyValues {
-            if ihash(kv.Key) == r {
+        intermdtFileName  = reduceName(jobName, mapTask, r)
+        intermdtFd, _     = os.Create(intermdtFileName)
+	    enc := json.NewEncoder(intermdtFd)
+	    for _, kv := range kvs {
+            //fmt.Printf("key:%s, value:%s\n",kv.Key, kv.Value)
+            if ihash(kv.Key) % nReduce == r {
 	            enc.Encode(&kv)
             }
         }
-        ioWriter.Close()
+        intermdtFd.Close()
     }
 }
 
