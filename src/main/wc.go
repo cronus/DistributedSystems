@@ -15,6 +15,9 @@ import (
 //
 func mapF(filename string, contents string) []mapreduce.KeyValue {
 	// Your code here (Part II).
+    var kvs []mapreduce.KeyValue
+
+    return kvs
 }
 
 //
@@ -24,6 +27,13 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
 //
 func reduceF(key string, values []string) string {
 	// Your code here (Part II).
+    var cntr int = 0
+
+    for _, value := range values {
+        cntr += strconv.Atoi(value) 
+    }
+
+    return strconv.Itoa(cntr)
 }
 
 // Can be run in 3 ways:
