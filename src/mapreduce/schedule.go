@@ -34,44 +34,66 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 	// Your code here (Part III, Part IV).
 	//
 
-    //schedule() must give each worker a sequence of tasks, 
-    //one at a time. schedule() should wait until all tasks have completed, and then return.
-
-    //schedule() learns about the set of workers by reading its registerChan argument. 
-    //That channel yields a string for each worker, containing the worker's RPC address. 
-    //Some workers may exist before schedule() is called, and some may start while schedule() is running; 
-    //schedule() should use all the workers, including ones that appear after it starts.
-
-    //schedule() tells a worker to execute a task by sending a Worker.DoTask RPC to the worker. 
-    //This RPC's arguments are defined by DoTaskArgs in mapreduce/common_rpc.go. 
-    //The File element is only used by Map tasks, and is the name of the file to read; 
-    //schedule() can find these file names in mapFiles.
-
-    //Use the call() function in mapreduce/common_rpc.go to send an RPC to a worker. 
-    //The first argument is the the worker's address, as read from registerChan. 
-    //The second argument should be "Worker.DoTask". 
-    //The third argument should be the DoTaskArgs structure, and the last argument should be nil.
-
-    var wkName string
+    workers := make(map[string]bool)
     var args *DoTaskArgs
     var wg sync.WaitGroup
+    var work string
+    taskNum := 0
 
-    for i := 0; i < ntasks; i++ {
-        args = new(DoTaskArgs)
-        args.JobName       = jobName
-        args.File          = mapFiles[i]
-        args.Phase         = phase
-        args.TaskNumber    = i
-        args.NumOtherPhase = n_other
+    // schedule() must give each worker a sequence of tasks, one at a time.
 
-        wkName =<- registerChan    
-        go func() {
-            wg.Add(1)
-            call (wkName, "Worker.DoTask", args, nil)
-            wg.Done()
-        }()
+    // schedule() learns about the set of workers by reading its registerChan argument. 
+    // That channel yields a string for each worker, containing the worker's RPC address. 
+    // Some workers may exist before schedule() is called, and some may start while schedule() is running; 
+    // schedule() should use all the workers, including ones that appear after it starts.
+
+    // schedule() tells a worker to execute a task by sending a Worker.DoTask RPC to the worker. 
+    // This RPC's arguments are defined by DoTaskArgs in mapreduce/common_rpc.go. 
+    // The File element is only used by Map tasks, and is the name of the file to read; 
+    // schedule() can find these file names in mapFiles.
+    // Use the call() function in mapreduce/common_rpc.go to send an RPC to a worker. 
+    // The first argument is the the worker's address, as read from registerChan. 
+    // The second argument should be "Worker.DoTask". 
+    // The third argument should be the DoTaskArgs structure, and the last argument should be nil.
+
+    newWk :=<- registerChan
+    workers[newWk] = true
+    for taskNum < ntasks {
+        select {
+        case newWk :=<- registerChan:
+            workers[newWk] = true
+        default:
+            fmt.Println(taskNum)
+            loop:
+                for {
+                    for wk, status := range workers {
+                        if status { 
+                            work = wk
+                            break loop
+                        }
+                    }
+                }
+
+            workers[work] = false
+            args = new(DoTaskArgs)
+            args.JobName       = jobName
+            args.File          = mapFiles[taskNum]
+            args.Phase         = phase
+            args.TaskNumber    = taskNum
+            taskNum++
+            args.NumOtherPhase = n_other
+
+            go func() {
+                fmt.Printf("start goroutine %v\n", taskNum)
+                wg.Add(1)
+                call (work, "Worker.DoTask", args, nil)
+                workers[work] = true
+                wg.Done()
+            }()
+        }
     }
 
+    // schedule() should wait until all tasks have completed, and then return.
     wg.Wait()
 	fmt.Printf("Schedule: %v done\n", phase)
 }
