@@ -33,6 +33,25 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 	//
 	// Your code here (Part III, Part IV).
 	//
+
+    //schedule() must give each worker a sequence of tasks, 
+    //one at a time. schedule() should wait until all tasks have completed, and then return.
+
+    //schedule() learns about the set of workers by reading its registerChan argument. 
+    //That channel yields a string for each worker, containing the worker's RPC address. 
+    //Some workers may exist before schedule() is called, and some may start while schedule() is running; 
+    //schedule() should use all the workers, including ones that appear after it starts.
+
+    //schedule() tells a worker to execute a task by sending a Worker.DoTask RPC to the worker. 
+    //This RPC's arguments are defined by DoTaskArgs in mapreduce/common_rpc.go. 
+    //The File element is only used by Map tasks, and is the name of the file to read; 
+    //schedule() can find these file names in mapFiles.
+
+    //Use the call() function in mapreduce/common_rpc.go to send an RPC to a worker. 
+    //The first argument is the the worker's address, as read from registerChan. 
+    //The second argument should be "Worker.DoTask". 
+    //The third argument should be the DoTaskArgs structure, and the last argument should be nil.
+
     var wkName string
     var args *DoTaskArgs
     var wg sync.WaitGroup
@@ -42,12 +61,15 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
         args.JobName       = jobName
         args.File          = mapFiles[i]
         args.Phase         = phase
-        args.TaskNumber    = ntasks
+        args.TaskNumber    = i
         args.NumOtherPhase = n_other
 
         wkName =<- registerChan    
-        wg.Add(1)
-        go call (wkName, "Worker.DoTask", args, nil)
+        go func() {
+            wg.Add(1)
+            call (wkName, "Worker.DoTask", args, nil)
+            wg.Done()
+        }()
     }
 
     wg.Wait()
