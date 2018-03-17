@@ -58,6 +58,34 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
     // The second argument should be "Worker.DoTask". 
     // The third argument should be the DoTaskArgs structure, and the last argument should be nil.
 
+    // handle failure
+    failureArgsCh := make(chan *DoTaskArgs)
+    go func (argsCh chan *DoTaskArgs) {
+        for {
+            args :=<- argsCh 
+            var work string
+            loop:
+                for {
+                    l.Lock()
+                    for wk, status := range workers {
+                        if status { 
+                            work = wk
+                            break loop
+                        }
+                    }
+                    cond.Wait()
+                    l.Unlock()
+                }
+
+            workers[work] = false
+            call (work, "Worker.DoTask", args, nil)
+            workers[work] = true
+            l.Unlock()
+            cond.Broadcast()
+            wg.Done()
+        }
+
+    } (failureArgsCh)
 
     wg.Add(ntasks)
     newWk :=<- registerChan
@@ -95,15 +123,20 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
             taskNum++
             args.NumOtherPhase = n_other
 
-            go func(work string, args *DoTaskArgs) {
+            go func(work string, args *DoTaskArgs, argsCh chan *DoTaskArgs) {
                 //fmt.Printf("[running dotask]worker: %v, taks num:%v\n", work, args.TaskNumber)
-                call (work, "Worker.DoTask", args, nil)
+                ok := call (work, "Worker.DoTask", args, nil)
+                if ok == false {
+                    //fmt.Println(args)
+                    argsCh <- args
+                    return
+                }
                 l.Lock()
                 workers[work] = true
                 l.Unlock()
                 cond.Broadcast()
                 wg.Done()
-            }(work, args)
+            }(work, args, failureArgsCh)
         }
     }
 
