@@ -37,8 +37,10 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
     workers := make(map[string]bool)
     var args *DoTaskArgs
     var wg sync.WaitGroup
-    var work string
     taskNum := 0
+    var l sync.Mutex
+    var cond *sync.Cond
+    cond = sync.NewCond(&l)
 
     // schedule() must give each worker a sequence of tasks, one at a time.
 
@@ -56,25 +58,35 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
     // The second argument should be "Worker.DoTask". 
     // The third argument should be the DoTaskArgs structure, and the last argument should be nil.
 
+
+    wg.Add(ntasks)
     newWk :=<- registerChan
     workers[newWk] = true
     for taskNum < ntasks {
         select {
         case newWk :=<- registerChan:
+            l.Lock()
+            //fmt.Printf("[new worker] work: %v taskNum: %v\n", newWk, taskNum)
             workers[newWk] = true
+            l.Unlock()
         default:
-            fmt.Println(taskNum)
+            var work string
             loop:
                 for {
+                    l.Lock()
                     for wk, status := range workers {
                         if status { 
+                            //fmt.Printf("[finding free worker]work: %v status: %v, taskNum: %v\n", wk, status, taskNum)
                             work = wk
                             break loop
                         }
                     }
+                    cond.Wait()
+                    l.Unlock()
                 }
 
             workers[work] = false
+            l.Unlock()
             args = new(DoTaskArgs)
             args.JobName       = jobName
             args.File          = mapFiles[taskNum]
@@ -83,13 +95,15 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
             taskNum++
             args.NumOtherPhase = n_other
 
-            go func() {
-                fmt.Printf("start goroutine %v\n", taskNum)
-                wg.Add(1)
+            go func(work string, args *DoTaskArgs) {
+                //fmt.Printf("[running dotask]worker: %v, taks num:%v\n", work, args.TaskNumber)
                 call (work, "Worker.DoTask", args, nil)
+                l.Lock()
                 workers[work] = true
+                l.Unlock()
+                cond.Broadcast()
                 wg.Done()
-            }()
+            }(work, args)
         }
     }
 
