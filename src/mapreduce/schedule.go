@@ -58,86 +58,102 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
     // The second argument should be "Worker.DoTask". 
     // The third argument should be the DoTaskArgs structure, and the last argument should be nil.
 
+    wg.Add(ntasks)
+    newWk :=<- registerChan
+    workers[newWk] = true
+
     // handle failure
-    failureArgsCh := make(chan *DoTaskArgs)
+    failureArgsCh := make(chan *DoTaskArgs, ntasks)
     go func (argsCh chan *DoTaskArgs) {
         for {
             args :=<- argsCh 
+            ok := false
             var work string
-            loop:
-                for {
-                    l.Lock()
-                    for wk, status := range workers {
-                        if status { 
-                            work = wk
-                            break loop
+            for !ok {
+                loop:
+                    for {
+                        l.Lock()
+                        for wk, status := range workers {
+                            if status { 
+                                //fmt.Printf("args: %v\n", args)
+                                work = wk
+                                break loop
+                            }
                         }
+                        cond.Wait()
+                        l.Unlock()
                     }
-                    cond.Wait()
-                    l.Unlock()
-                }
 
-            workers[work] = false
-            call (work, "Worker.DoTask", args, nil)
-            workers[work] = true
-            l.Unlock()
-            cond.Broadcast()
+                ok = call (work, "Worker.DoTask", args, nil)
+                fmt.Printf("work: %v, call return status: %v\n", work, ok)
+                if ok == false {
+                    workers[work] = false
+                }
+                l.Unlock()
+            }
             wg.Done()
         }
 
     } (failureArgsCh)
 
-    wg.Add(ntasks)
-    newWk :=<- registerChan
-    workers[newWk] = true
-    for taskNum < ntasks {
-        select {
-        case newWk :=<- registerChan:
-            l.Lock()
+    // check if there is any new worker
+    go func(workers map[string]bool) {
+        for {
+            newWk :=<- registerChan
             //fmt.Printf("[new worker] work: %v taskNum: %v\n", newWk, taskNum)
+            l.Lock()
             workers[newWk] = true
             l.Unlock()
-        default:
-            var work string
-            loop:
-                for {
-                    l.Lock()
-                    for wk, status := range workers {
-                        if status { 
-                            //fmt.Printf("[finding free worker]work: %v status: %v, taskNum: %v\n", wk, status, taskNum)
-                            work = wk
-                            break loop
-                        }
-                    }
-                    cond.Wait()
-                    l.Unlock()
-                }
-
-            workers[work] = false
-            l.Unlock()
-            args = new(DoTaskArgs)
-            args.JobName       = jobName
-            args.File          = mapFiles[taskNum]
-            args.Phase         = phase
-            args.TaskNumber    = taskNum
-            taskNum++
-            args.NumOtherPhase = n_other
-
-            go func(work string, args *DoTaskArgs, argsCh chan *DoTaskArgs) {
-                //fmt.Printf("[running dotask]worker: %v, taks num:%v\n", work, args.TaskNumber)
-                ok := call (work, "Worker.DoTask", args, nil)
-                if ok == false {
-                    //fmt.Println(args)
-                    argsCh <- args
-                    return
-                }
-                l.Lock()
-                workers[work] = true
-                l.Unlock()
-                cond.Broadcast()
-                wg.Done()
-            }(work, args, failureArgsCh)
+            cond.Broadcast()
         }
+    }(workers)
+
+    for taskNum < ntasks {
+        //select {
+        //case newWk :=<- registerChan:
+        //    l.Lock()
+        //    workers[newWk] = true
+        //    l.Unlock()
+        //default:
+        var work string
+        loop:
+            for {
+                l.Lock()
+                for wk, status := range workers {
+                    if status { 
+                        //fmt.Printf("[finding free worker]work: %v status: %v, taskNum: %v\n", wk, status, taskNum)
+                        work = wk
+                        break loop
+                    }
+                }
+                cond.Wait()
+                l.Unlock()
+            }
+
+        workers[work] = false
+        l.Unlock()
+        args = new(DoTaskArgs)
+        args.JobName       = jobName
+        args.File          = mapFiles[taskNum]
+        args.Phase         = phase
+        args.TaskNumber    = taskNum
+        taskNum++
+        args.NumOtherPhase = n_other
+
+        go func(work string, args *DoTaskArgs, argsCh chan *DoTaskArgs) {
+            //fmt.Printf("[running dotask]worker: %v, taks num:%v\n", work, args.TaskNumber)
+            ok := call (work, "Worker.DoTask", args, nil)
+            l.Lock()
+            workers[work] = true
+            l.Unlock()
+            cond.Broadcast()
+            if ok == false {
+                //fmt.Println(args)
+                argsCh <- args
+                return
+            }
+            wg.Done()
+        }(work, args, failureArgsCh)
     }
 
     // schedule() should wait until all tasks have completed, and then return.
