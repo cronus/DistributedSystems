@@ -19,6 +19,7 @@ package raft
 
 import "sync"
 import "labrpc"
+import "math/rand"
 
 // import "bytes"
 // import "labgob"
@@ -48,13 +49,30 @@ type ApplyMsg struct {
 type Raft struct {
 	mu        sync.Mutex          // Lock to protect shared access to this peer's state
 	peers     []*labrpc.ClientEnd // RPC end points of all peers
+
+    // Persistent state on all servers
+    // (Updated on stable storage before responding to RPCs)
+    // This implementation doesn't use disk; ti will save and restore
+    // persistent state from a Persister object
+    // Raft should initialize its state from Persister, 
+    // and should use it to save its persistent state each tiem the state changes
+    // Use ReadRaftState() and SaveRaftState
 	persister *Persister          // Object to hold this peer's persisted state
 	me        int                 // this peer's index into peers[]
 
 	// Your data here (2A, 2B, 2C).
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
+    state string
+    
+    // Volatile state on all servers
+    commitIndex int
+    lastApplied int
 
+    // Volatile state on leaders:
+    // (Reinitialized after election)
+    nextIndex []int
+    matchIndex []int
 }
 
 // return currentTerm and whether this server
@@ -116,6 +134,10 @@ func (rf *Raft) readPersist(data []byte) {
 //
 type RequestVoteArgs struct {
 	// Your data here (2A, 2B).
+    term int
+    candidateId int
+    latLogIndex int
+    lastLogTerm int
 }
 
 //
@@ -124,6 +146,8 @@ type RequestVoteArgs struct {
 //
 type RequestVoteReply struct {
 	// Your data here (2A).
+    term int
+    voteGranted bool
 }
 
 //
@@ -167,6 +191,33 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 	return ok
 }
 
+type AppendEntriesArgs struct {
+    term int
+    leaderId int
+    prefLogIndex int
+    preLogTerm int
+    entries  []byte
+    leaderCommit int
+}
+
+
+type AppendEntriesReply struct {
+    term int
+    success bool
+}
+
+func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
+	// Your code here (2A, 2B).
+
+    reply.term = 
+    reply.success = true
+
+}
+
+func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
+	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
+	return ok
+}
 
 //
 // the service using Raft (e.g. a k/v server) wants to start
@@ -221,6 +272,38 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.me = me
 
 	// Your initialization code here (2A, 2B, 2C).
+
+    // currentTerm
+    rf.persister.raftstate[0:3] = 0
+    // votedFor
+    rf.persister.raftstate[4:7] = 0
+    //log
+
+    // background heartbeat
+    go func(rf *Raft) {
+        for {
+            time.Sleep(100)
+            for server, peer := range peers {
+                if server != me {
+                    rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply)
+                }
+            }
+        }
+    }(rf)
+
+    // background election timeout
+    go func(rf *Raft) {
+        for {
+            for i := rand.Int32(); i > 0; i-- {
+                if receive heartbeat {
+                    i = rand.Int32()
+                }
+            }
+            for server, peer := range peers {
+                rf.sendRequestVote(server, requestVoteArgs, requestVoteReply)
+            }
+        }
+    }(rf)
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
