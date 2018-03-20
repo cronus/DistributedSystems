@@ -155,6 +155,20 @@ type RequestVoteReply struct {
 //
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
+
+    // 1. false if term < currentTerm
+    if args.term < rf.currentTerm {
+        reply.voteGranted  = false
+    } 
+    // 2. votedFor is null or candidateId and
+    //    candidate's log is at least as up-to-date as receiver's log grant vote
+    else if rf.votedFor == nil || args.candidateId == rf.votedFor &&
+            args.lastLogTerm >= rf.lastApplied {
+        rf.currentTerm = args.term
+        reply.voteGranted = true
+    }
+
+    return
 }
 
 //
@@ -209,9 +223,18 @@ type AppendEntriesReply struct {
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	// Your code here (2A, 2B).
 
-    reply.term = 
-    reply.success = true
+    // 1. false if term < currentTerm
+    if args.term < rf.currentTerm {
+        reply.success = false
+    }
+    // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
 
+    // 3. if an existing entry conflicts with a new one (same index but diff terms), 
+    //    delete the existing entry and all that follows it 
+
+    // 4. append any new entries not already in the log
+
+    // 5. if leadercommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
@@ -279,28 +302,68 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.persister.raftstate[4:7] = 0
     //log
 
-    // background heartbeat
     go func(rf *Raft) {
+        timeout := 300 + rand.Int31n(100)
         for {
-            time.Sleep(100)
-            for server, peer := range peers {
-                if server != me {
-                    rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply)
-                }
-            }
-        }
-    }(rf)
+            switch role {
+            case "Follower":
+                requestVoteArgs  = new(RequestVoteArgs)
+                requestVoteReply = new(RequestVoteReply, len(peers))
+                t := NewTimer(timeout * time.Millisecond)
 
-    // background election timeout
-    go func(rf *Raft) {
-        for {
-            for i := rand.Int32(); i > 0; i-- {
-                if receive heartbeat {
-                    i = rand.Int32()
+                select {
+                case <- t.C:
+
+                // receiving heartbeat
+                default:
                 }
-            }
-            for server, peer := range peers {
-                rf.sendRequestVote(server, requestVoteArgs, requestVoteReply)
+
+            case "Candidate":
+                t.Reset(timeout * time.Millisecond)
+
+                requestVoteArgs.term         =
+                requestVoteArgs.candidateId  = rf.me
+                requestVoteArgs.lastLogIndex =
+                requestVoteArgs.lastLogTerm  =
+
+                fmt.Printf("leader: %v, election timeout, send Request Vote", me);
+                var ok []bool
+                for server, peer := range peers {
+                    ok[server] := rf.sendRequestVote(server, requestVoteArgs, requestVoteReply[server])
+                }
+
+                select {
+                case <- t.C:
+
+                // receiving heartbeat
+                default:
+                    if receive heartbeat from majority become leader
+                }
+
+            case "Leader":
+                // heartbeat
+                go func(rf *Raft) {
+                    period := 200
+                    appendEntriesArgs  := new(AppendEntriesArgs)
+                    appendEntriesReply := new(AppendEntriesReply, len(peers))
+
+                    for {
+                        appendEntriesArgs.term         = 
+                        appendEntriesArgs.leadId       =
+                        appendEntriesArgs.prefLogIndex =
+                        appendEntriesArgs.preLogTerm   = 
+                        appendEntriesArgs.entries      = 
+                        appendEntriesArgs.leaderCommit =
+
+                        time.Sleep(period * time.Millisecond)
+                        fmt.printf("leader: %v, send hearbeat, period: %v\n", rf.me, period);
+                        for server, peer := range peers {
+                            if server != me {
+                                rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply[server])
+                            }
+                        }
+                    }
+                }(rf)
             }
         }
     }(rf)
