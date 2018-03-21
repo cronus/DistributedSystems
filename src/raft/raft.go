@@ -155,10 +155,10 @@ func (rf *Raft) readPersist(data []byte) {
 //
 type RequestVoteArgs struct {
 	// Your data here (2A, 2B).
-    term int
-    candidateId int
-    lastLogIndex int
-    lastLogTerm int
+    Term int
+    CandidateId int
+    LastLogIndex int
+    LastLogTerm int
 }
 
 //
@@ -167,8 +167,8 @@ type RequestVoteArgs struct {
 //
 type RequestVoteReply struct {
 	// Your data here (2A).
-    term int
-    voteGranted bool
+    Term int
+    VoteGranted bool
 }
 
 //
@@ -178,15 +178,15 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
 
     // 1. false if term < currentTerm
-    if args.term < rf.currentTerm {
-        reply.voteGranted  = false
-    } else if rf.votedFor == NULL || args.candidateId == rf.votedFor &&
+    if args.Term < rf.currentTerm {
+        reply.VoteGranted  = false
+    } else if rf.votedFor == NULL || args.CandidateId == rf.votedFor &&
     // 2. votedFor is null or candidateId and
     //    candidate's log is at least as up-to-date as receiver's log grant vote
-            args.lastLogTerm >= rf.lastApplied {
-        rf.currentTerm    = args.term
-        reply.term        = args.term 
-        reply.voteGranted = true
+            args.LastLogTerm >= rf.lastApplied {
+        rf.currentTerm    = args.Term
+        reply.Term        = args.Term 
+        reply.VoteGranted = true
     }
 
     return
@@ -227,53 +227,56 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 }
 
 type AppendEntriesArgs struct {
-    term int
-    leaderId int
-    prevLogIndex int
-    prevLogTerm int
-    entries  []LogEntry
-    leaderCommit int
+    Term int
+    LeaderId int
+    PrevLogIndex int
+    PrevLogTerm int
+    Entries  []LogEntry
+    LeaderCommit int
 }
 
 
 type AppendEntriesReply struct {
-    term int
-    success bool
+    Term int
+    Success bool
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	// Your code here (2A, 2B).
 
     // 1. false if term < currentTerm
-    if args.term < rf.currentTerm {
-        reply.success = false
-    } else if len(rf.logs) <= args.prevLogIndex  {
+    if args.Term < rf.currentTerm {
+        reply.Success = false
+    } else if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
-        reply.success = false
-    } else if rf.logs[args.prevLogIndex].term != args.prevLogTerm {
+        reply.Success = false
+    } else if rf.logs[args.PrevLogIndex].term != args.PrevLogTerm {
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
     //    delete the existing entry and all that follows it 
-        rf.logs = rf.logs[:args.prevLogIndex]
+        rf.logs = rf.logs[:args.PrevLogIndex]
     }
 
     // 4. append any new entries not already in the log
-    if len(args.entries) == 0 {
+    if len(args.Entries) == 0 {
         fmt.Printf("received hearbeat\n")
         rf.heartBeat <- true
     } else {
-        for _, entry := range args.entries {
+        for _, entry := range args.Entries {
             rf.logs = append(rf.logs, entry)
         }
     }
 
     // 5. if leadercommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
-    if args.leaderCommit > rf.commitIndex {
-        if args.leaderCommit < len(rf.logs) {
-            rf.commitIndex = args.leaderCommit
+    if args.LeaderCommit > rf.commitIndex {
+        if args.LeaderCommit < len(rf.logs) {
+            rf.commitIndex = args.LeaderCommit
         } else {
             rf.commitIndex = len(rf.logs)
         }
     }
+
+    reply.Success = true
+    reply.Term    = rf.currentTerm
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
@@ -340,7 +343,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
     // votedFor
     rf.votedFor = NULL
     //log
-    rf.logs = make([]LogEntry, 2)
+    rf.logs = make([]LogEntry, 1)
 
     rf.commitIndex = 0
     rf.lastApplied = 0
@@ -380,13 +383,14 @@ func Make(peers []*labrpc.ClientEnd, me int,
                 t.Reset(timeout * time.Millisecond)
                 // send RequestVote to all other servers
                 fmt.Printf("Candidate: %v, election timeout, send Request Vote\n", me);
-                requestVoteArgs.term         = rf.currentTerm
-                requestVoteArgs.candidateId  = rf.me
-                requestVoteArgs.lastLogIndex = rf.commitIndex
-                requestVoteArgs.lastLogTerm  = rf.logs[rf.commitIndex].term
+                requestVoteArgs.Term         = rf.currentTerm
+                requestVoteArgs.CandidateId  = rf.me
+                requestVoteArgs.LastLogIndex = rf.commitIndex
+                requestVoteArgs.LastLogTerm  = rf.logs[rf.commitIndex].term
                 ok := make([]bool, len(peers))
                 for server, _ := range peers {
                     if server != me {
+                        requestVoteReply[server] = new(RequestVoteReply)
                         ok[server] = rf.sendRequestVote(server, requestVoteArgs, requestVoteReply[server])
                     }
                 }
@@ -395,7 +399,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     if i == rf.me {
                         continue
                     }
-                    if ok[i] && requestVoteReply[i].voteGranted {
+                    if ok[i] && requestVoteReply[i].VoteGranted {
                         grantedCnt++ 
                     }
                 }
@@ -426,12 +430,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     appendEntriesReply := make([]*AppendEntriesReply, len(peers))
 
                     for {
-                        appendEntriesArgs.term         = rf.currentTerm
-                        appendEntriesArgs.leaderId     = rf.me
-                        appendEntriesArgs.prevLogIndex = -1
-                        appendEntriesArgs.prevLogTerm   = -1
-                        appendEntriesArgs.entries      = nil
-                        appendEntriesArgs.leaderCommit = -1
+                        appendEntriesArgs.Term         = rf.currentTerm
+                        appendEntriesArgs.LeaderId     = rf.me
+                        appendEntriesArgs.PrevLogIndex = -1
+                        appendEntriesArgs.PrevLogTerm   = -1
+                        appendEntriesArgs.Entries      = nil
+                        appendEntriesArgs.LeaderCommit = -1
 
                         time.Sleep(period * time.Millisecond)
                         fmt.Printf("leader: %v, send hearbeat, period: %v\n", rf.me, period);
