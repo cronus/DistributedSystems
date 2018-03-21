@@ -43,6 +43,11 @@ type ApplyMsg struct {
 	CommandIndex int
 }
 
+type LogEntry struct {
+    term int
+    command interface{}
+}
+
 //
 // A Go object implementing a single Raft peer.
 //
@@ -63,7 +68,12 @@ type Raft struct {
 	// Your data here (2A, 2B, 2C).
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
-    state string
+
+    // from Figure 2
+    // Persistent state on all servers
+    currentTerm int
+    votedFor int
+    logs []LogEntry
     
     // Volatile state on all servers
     commitIndex int
@@ -73,6 +83,11 @@ type Raft struct {
     // (Reinitialized after election)
     nextIndex []int
     matchIndex []int
+
+    // extra
+    state string
+    heartBeat chan bool
+    shutdown chan struct{}
 }
 
 // return currentTerm and whether this server
@@ -82,6 +97,8 @@ func (rf *Raft) GetState() (int, bool) {
 	var term int
 	var isleader bool
 	// Your code here (2A).
+    term = rf.currentTerm
+    isleader = rf.state == "Leader"
 	return term, isleader
 }
 
@@ -164,7 +181,8 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     //    candidate's log is at least as up-to-date as receiver's log grant vote
     else if rf.votedFor == nil || args.candidateId == rf.votedFor &&
             args.lastLogTerm >= rf.lastApplied {
-        rf.currentTerm = args.term
+        rf.currentTerm    = args.term
+        reply.term        = args.term ??
         reply.voteGranted = true
     }
 
@@ -208,9 +226,9 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 type AppendEntriesArgs struct {
     term int
     leaderId int
-    prefLogIndex int
+    prevLogIndex int
     preLogTerm int
-    entries  []byte
+    entries  []LogEntry
     leaderCommit int
 }
 
@@ -228,13 +246,27 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         reply.success = false
     }
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
+    else if len(rf.logs) <= args.prevLogIndex || rf.logs[args.prevLogIndex].term != args.prevLogTerm {
+        reply.success = false
+    }
 
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
     //    delete the existing entry and all that follows it 
 
     // 4. append any new entries not already in the log
+    for _, entry = range entries {
+        rf.logs = append(rf.logs, entry)
+    }
 
     // 5. if leadercommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
+    if leaderCommit > rf.commitIndex {
+        if leaderCommit < index of last new entry {
+            rf.commitIndex = leaderCommit
+        }
+        else {
+            rf.commitIndex = index of last new entry
+        }
+    }
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
@@ -297,15 +329,18 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	// Your initialization code here (2A, 2B, 2C).
 
     // currentTerm
-    rf.persister.raftstate[0:3] = 0
+    rf.currentTerm = 0
     // votedFor
-    rf.persister.raftstate[4:7] = 0
+    rf.votedFor = nil
     //log
+    rf.logs = make([]LogEntry)
+    // heartbeat chan
+    rf.heartBeat = make(chan bool)
 
     go func(rf *Raft) {
         timeout := 300 + rand.Int31n(100)
         for {
-            switch role {
+            switch rf.state {
             case "Follower":
                 requestVoteArgs  = new(RequestVoteArgs)
                 requestVoteReply = new(RequestVoteReply, len(peers))
@@ -313,18 +348,22 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                 select {
                 case <- t.C:
+                    rf.state = "Candidate"
+                    continue
 
                 // receiving heartbeat
-                default:
+                case <-rf.heartBeat:
+                    t.Stop()
+                    t.Reset(timeout * time.Millisecond)
                 }
 
             case "Candidate":
                 t.Reset(timeout * time.Millisecond)
 
-                requestVoteArgs.term         =
+                requestVoteArgs.term         = rf.currentTerm
                 requestVoteArgs.candidateId  = rf.me
-                requestVoteArgs.lastLogIndex =
-                requestVoteArgs.lastLogTerm  =
+                requestVoteArgs.lastLogIndex = rf.commitIndex
+                requestVoteArgs.lastLogTerm  = rf.logs[commitIndex].term
 
                 fmt.Printf("leader: %v, election timeout, send Request Vote", me);
                 var ok []bool
@@ -334,10 +373,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                 select {
                 case <- t.C:
+                    continue
 
                 // receiving heartbeat
-                default:
-                    if receive heartbeat from majority become leader
+                case <- heartBeat:
+                    rf.state = "Follower"
+                    continue
+
                 }
 
             case "Leader":
@@ -348,12 +390,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     appendEntriesReply := new(AppendEntriesReply, len(peers))
 
                     for {
-                        appendEntriesArgs.term         = 
-                        appendEntriesArgs.leadId       =
-                        appendEntriesArgs.prefLogIndex =
-                        appendEntriesArgs.preLogTerm   = 
-                        appendEntriesArgs.entries      = 
-                        appendEntriesArgs.leaderCommit =
+                        appendEntriesArgs.term         = rf.currentTerm
+                        appendEntriesArgs.leadId       = rf.me
+                        appendEntriesArgs.prefLogIndex = nil
+                        appendEntriesArgs.preLogTerm   = nil
+                        appendEntriesArgs.entries      = nil
+                        appendEntriesArgs.leaderCommit = nil
 
                         time.Sleep(period * time.Millisecond)
                         fmt.printf("leader: %v, send hearbeat, period: %v\n", rf.me, period);
