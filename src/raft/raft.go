@@ -20,6 +20,8 @@ package raft
 import "sync"
 import "labrpc"
 import "math/rand"
+import "fmt"
+import "time"
 
 // import "bytes"
 // import "labgob"
@@ -90,6 +92,8 @@ type Raft struct {
     shutdown chan struct{}
 }
 
+const NULL = -1
+
 // return currentTerm and whether this server
 // believes it is the leader.
 func (rf *Raft) GetState() (int, bool) {
@@ -153,7 +157,7 @@ type RequestVoteArgs struct {
 	// Your data here (2A, 2B).
     term int
     candidateId int
-    latLogIndex int
+    lastLogIndex int
     lastLogTerm int
 }
 
@@ -176,13 +180,12 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     // 1. false if term < currentTerm
     if args.term < rf.currentTerm {
         reply.voteGranted  = false
-    } 
+    } else if rf.votedFor == NULL || args.candidateId == rf.votedFor &&
     // 2. votedFor is null or candidateId and
     //    candidate's log is at least as up-to-date as receiver's log grant vote
-    else if rf.votedFor == nil || args.candidateId == rf.votedFor &&
             args.lastLogTerm >= rf.lastApplied {
         rf.currentTerm    = args.term
-        reply.term        = args.term ??
+        reply.term        = args.term 
         reply.voteGranted = true
     }
 
@@ -227,7 +230,7 @@ type AppendEntriesArgs struct {
     term int
     leaderId int
     prevLogIndex int
-    preLogTerm int
+    prevLogTerm int
     entries  []LogEntry
     leaderCommit int
 }
@@ -244,27 +247,31 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     // 1. false if term < currentTerm
     if args.term < rf.currentTerm {
         reply.success = false
-    }
+    } else if len(rf.logs) <= args.prevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
-    else if len(rf.logs) <= args.prevLogIndex || rf.logs[args.prevLogIndex].term != args.prevLogTerm {
         reply.success = false
-    }
-
+    } else if rf.logs[args.prevLogIndex].term != args.prevLogTerm {
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
     //    delete the existing entry and all that follows it 
+        rf.logs = rf.logs[:args.prevLogIndex]
+    }
 
     // 4. append any new entries not already in the log
-    for _, entry = range entries {
-        rf.logs = append(rf.logs, entry)
+    if len(args.entries) == 0 {
+        fmt.Printf("received hearbeat\n")
+        rf.heartBeat <- true
+    } else {
+        for _, entry := range args.entries {
+            rf.logs = append(rf.logs, entry)
+        }
     }
 
     // 5. if leadercommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
-    if leaderCommit > rf.commitIndex {
-        if leaderCommit < index of last new entry {
-            rf.commitIndex = leaderCommit
-        }
-        else {
-            rf.commitIndex = index of last new entry
+    if args.leaderCommit > rf.commitIndex {
+        if args.leaderCommit < len(rf.logs) {
+            rf.commitIndex = args.leaderCommit
+        } else {
+            rf.commitIndex = len(rf.logs)
         }
     }
 }
@@ -331,20 +338,24 @@ func Make(peers []*labrpc.ClientEnd, me int,
     // currentTerm
     rf.currentTerm = 0
     // votedFor
-    rf.votedFor = nil
+    rf.votedFor = NULL
     //log
-    rf.logs = make([]LogEntry)
+    rf.logs = make([]LogEntry, 2)
+
+    rf.commitIndex = 0
+    rf.lastApplied = 0
+
     // heartbeat chan
     rf.heartBeat = make(chan bool)
 
+    rf.state = "Follower"
+
     go func(rf *Raft) {
-        timeout := 300 + rand.Int31n(100)
+        timeout := time.Duration(300 + rand.Int31n(100))
+        t := time.NewTimer(timeout * time.Millisecond)
         for {
             switch rf.state {
             case "Follower":
-                requestVoteArgs  = new(RequestVoteArgs)
-                requestVoteReply = new(RequestVoteReply, len(peers))
-                t := NewTimer(timeout * time.Millisecond)
 
                 select {
                 case <- t.C:
@@ -358,54 +369,96 @@ func Make(peers []*labrpc.ClientEnd, me int,
                 }
 
             case "Candidate":
-                t.Reset(timeout * time.Millisecond)
+                requestVoteArgs  := new(RequestVoteArgs)
+                requestVoteReply := make([]*RequestVoteReply, len(peers))
 
+                // increment currentTerm
+                rf.currentTerm++
+                // vote for itself
+                grantedCnt := 1
+                // reset election timer
+                t.Reset(timeout * time.Millisecond)
+                // send RequestVote to all other servers
+                fmt.Printf("Candidate: %v, election timeout, send Request Vote\n", me);
                 requestVoteArgs.term         = rf.currentTerm
                 requestVoteArgs.candidateId  = rf.me
                 requestVoteArgs.lastLogIndex = rf.commitIndex
-                requestVoteArgs.lastLogTerm  = rf.logs[commitIndex].term
+                requestVoteArgs.lastLogTerm  = rf.logs[rf.commitIndex].term
+                ok := make([]bool, len(peers))
+                for server, _ := range peers {
+                    if server != me {
+                        ok[server] = rf.sendRequestVote(server, requestVoteArgs, requestVoteReply[server])
+                    }
+                }
 
-                fmt.Printf("leader: %v, election timeout, send Request Vote", me);
-                var ok []bool
-                for server, peer := range peers {
-                    ok[server] := rf.sendRequestVote(server, requestVoteArgs, requestVoteReply[server])
+                for i := 0; i < len(peers); i++ {
+                    if i == rf.me {
+                        continue
+                    }
+                    if ok[i] && requestVoteReply[i].voteGranted {
+                        grantedCnt++ 
+                    }
+                }
+
+                // become leader if receive from majority of servers
+                if grantedCnt > len(peers) + 1 {
+                    rf.state = "Leader"
+                    continue
                 }
 
                 select {
-                case <- t.C:
-                    continue
-
-                // receiving heartbeat
-                case <- heartBeat:
+                // if AppendEntries RPC received from new leader:
+                // convert to follower
+                case <- rf.heartBeat:
                     rf.state = "Follower"
                     continue
-
+                // election timout elapses: start new election
+                case <- t.C:
+                    continue
                 }
 
             case "Leader":
-                // heartbeat
+                // Upon election: send initial hearbeat to each server
+                // repeat during idle period to preven election timeout
                 go func(rf *Raft) {
-                    period := 200
+                    period := time.Duration(200)
                     appendEntriesArgs  := new(AppendEntriesArgs)
-                    appendEntriesReply := new(AppendEntriesReply, len(peers))
+                    appendEntriesReply := make([]*AppendEntriesReply, len(peers))
 
                     for {
                         appendEntriesArgs.term         = rf.currentTerm
-                        appendEntriesArgs.leadId       = rf.me
-                        appendEntriesArgs.prefLogIndex = nil
-                        appendEntriesArgs.preLogTerm   = nil
+                        appendEntriesArgs.leaderId     = rf.me
+                        appendEntriesArgs.prevLogIndex = -1
+                        appendEntriesArgs.prevLogTerm   = -1
                         appendEntriesArgs.entries      = nil
-                        appendEntriesArgs.leaderCommit = nil
+                        appendEntriesArgs.leaderCommit = -1
 
                         time.Sleep(period * time.Millisecond)
-                        fmt.printf("leader: %v, send hearbeat, period: %v\n", rf.me, period);
-                        for server, peer := range peers {
+                        fmt.Printf("leader: %v, send hearbeat, period: %v\n", rf.me, period);
+                        for server, _ := range peers {
                             if server != me {
                                 rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply[server])
                             }
                         }
                     }
                 }(rf)
+
+                // if command received from client:
+                // append entry to local log, respond after entry applied to state machine
+
+                // if last log index >= nextIndex for a follower:
+                // send AppendEntries RPC with log entries starting at nextIndex
+                // 1) if successful: update nextIndex and matchIndex for follower
+                // 2) if AppendEntries fails because of log inconsistency:
+                //    decremntt nextIndex and retry
+
+
+                // if there exists an N such that N > commitIndex, a majority of matchIndex[i] >= N
+                // and log[N].term == currentTerm:
+                // set commitIndex = N
+
+
+
             }
         }
     }(rf)
