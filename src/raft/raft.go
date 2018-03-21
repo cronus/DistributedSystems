@@ -441,6 +441,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         fmt.Printf("leader: %v, send hearbeat, period: %v\n", rf.me, period);
                         for server, _ := range peers {
                             if server != me {
+                                appendEntriesReply[server] = new(AppendEntriesReply)
                                 rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply[server])
                             }
                         }
