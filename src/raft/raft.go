@@ -181,7 +181,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.VoteGranted  = false
-    // TODO problem
     } else if (rf.votedFor == NULL || rf.votedFor == args.CandidateId) &&
             args.LastLogTerm >= rf.logs[rf.lastApplied].Term {
     // 2. votedFor is null or candidateId and
@@ -265,7 +264,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
     // 4. append any new entries not already in the log
     if len(args.Entries) == 0 {
-        DPrintf("received hearbeat\n")
+        DPrintf("[server index:%v]received heartbeat\n", rf.me)
         rf.heartBeat <- true
     } else {
         for _, entry := range args.Entries {
@@ -362,13 +361,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.state = "Follower"
 
     go func(rf *Raft) {
-        timeout := time.Duration(400 + rand.Int31n(100))
+        timeout := time.Duration(500 + rand.Int31n(500))
         t := time.NewTimer(timeout * time.Millisecond)
         var shutdown chan struct{}
         for {
             switch rf.state {
             case "Follower":
-
                 select {
                 case <- t.C:
                     rf.state = "Candidate"
@@ -384,17 +382,19 @@ func Make(peers []*labrpc.ClientEnd, me int,
                 requestVoteArgs  := new(RequestVoteArgs)
                 requestVoteReply := make([]*RequestVoteReply, len(peers))
 
+                rf.mu.Lock()
                 // vote for itself
                 rf.votedFor = rf.me
                 grantedCnt := 1
                 // reset election timer
                 t.Reset(timeout * time.Millisecond)
                 // send RequestVote to all other servers
-                DPrintf("[server index:%v] Candidate, election timeout, send RequestVote\n", me);
+                DPrintf("[server index:%v] Candidate, election timeout %v, send RequestVote\n", me, timeout*time.Millisecond);
                 requestVoteArgs.Term         = rf.currentTerm + 1
                 requestVoteArgs.CandidateId  = rf.me
                 requestVoteArgs.LastLogIndex = rf.commitIndex
                 requestVoteArgs.LastLogTerm  = rf.logs[rf.commitIndex].Term
+                rf.mu.Unlock()
                 ok := make([]bool, len(peers))
                 for server, _ := range peers {
                     if server != me {
@@ -440,7 +440,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 appendEntriesArgs.LeaderCommit = 0
 
                                 time.Sleep(period * time.Millisecond)
-                                DPrintf("[server index %v]Leader, send hearbeat, period: %v\n", rf.me, period);
+                                DPrintf("[server index %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
                                 for server, _ := range peers {
                                     if server != me {
                                         appendEntriesReply[server] = new(AppendEntriesReply)
