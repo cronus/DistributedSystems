@@ -102,6 +102,8 @@ func (rf *Raft) GetState() (int, bool) {
 	var term int
 	var isleader bool
 	// Your code here (2A).
+    rf.mu.Lock()
+    defer rf.mu.Unlock()
     term     = rf.currentTerm
     isleader = (rf.state == "Leader")
 	return term, isleader
@@ -195,7 +197,9 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         rf.votedFor       = args.CandidateId
         reply.Term        = args.Term 
         reply.VoteGranted = true
+        rf.mu.Unlock()
         rf.voteReqChan <- true
+        rf.mu.Lock()
     } else {
         reply.VoteGranted = false
     }
@@ -289,10 +293,13 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         }
     }
 
-    rf.appendEntriesChan <- true
     rf.currentTerm = args.Term
     reply.Success  = true
     reply.Term     = rf.currentTerm
+    rf.mu.Unlock()
+    rf.appendEntriesChan <- true
+    rf.mu.Lock()
+    return
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
@@ -410,8 +417,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         t.Stop()
                         timeout := time.Duration(200 + rand.Int31n(200))
                         t = time.NewTimer(timeout * time.Millisecond)
+                        continue
                     default:
                         // increment currentTerm
+                        if rf.votedFor != NULL {
+                           continue
+                        }
                         rf.currentTerm++
                         // vote for itself
                         rf.votedFor = rf.me
@@ -424,6 +435,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         requestVoteArgs.CandidateId  = rf.me
                         requestVoteArgs.LastLogIndex = rf.commitIndex
                         requestVoteArgs.LastLogTerm  = rf.logs[rf.commitIndex].Term
+
 
                         for server, _ := range peers {
                             if server != me {
@@ -445,7 +457,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             go func(rf *Raft) {
                                 period := time.Duration(100)
                                 appendEntriesArgs  := new(AppendEntriesArgs)
-                                appendEntriesReply := make([]*AppendEntriesReply, len(peers))
+                                appendEntriesReply := new(AppendEntriesReply)
 
                                 for {
                                     select {
@@ -465,8 +477,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         DPrintf("[server index %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
                                         for server, _ := range peers {
                                             if server != me {
-                                                appendEntriesReply[server] = new(AppendEntriesReply)
-                                                rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply[server])
+                                                rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply)
                                             }
                                         }
                                     }
