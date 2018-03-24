@@ -328,6 +328,64 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	isLeader := true
 
 	// Your code here (2B).
+    rf.mu.Lock()
+    defer rf.mu.Unlock()
+
+    switch rf.state {
+    case "Leader":
+        index    = len(rf.logs)
+        term     = rf.currentTerm
+        isLeader = true
+
+        go func (command interface{}) {
+            logEntry           := new(LogEntry)
+            appendEntriesArgs  := new(AppendEntriesArgs)
+            appendEntriesReply := make([]*AppendEntriesReply, len(rf.peers))
+
+            rf.mu.Lock()
+
+            rf.logs = append(rf.logs, *logEntry)
+
+            appendEntriesArgs.Term          = rf.currentTerm
+            appendEntriesArgs.LeaderId      = rf.me
+            appendEntriesArgs.PrevLogIndex  = len(rf.logs) - 1
+            appendEntriesArgs.PrevLogTerm   = rf.logs[len(rf.logs) - 1].LogTerm
+            appendEntriesArgs.Entries[0]    = *logEntry
+            appendEntriesArgs.LeaderCommit  = rf.commitIndex
+
+            appendEntriesReplyCh := make(chan *AppendEntriesReply)
+            for server, _ := range rf.peers {
+                if server != rf.me {
+                    appendEntriesReply[server] = new(AppendEntriesReply)
+                    go func(server int, args *AppendEntriesArgs, reply *AppendEntriesReply, replyChan chan *AppendEntriesReply) {
+                        ok := rf.sendAppendEntries(server, args, reply)
+
+                        if ok && reply.Success {
+                            replyChan <- reply
+                        } else {
+                            reply.Success = false
+                            replyChan <- reply
+                        }
+                    }(server, appendEntriesArgs, appendEntriesReply[server], appendEntriesReplyCh)
+                }
+            }
+
+            // check replies
+            reply := new(AppendEntriesReply)
+
+            //loop:
+                for {
+                    reply =<- appendEntriesReplyCh
+                    DPrintf("%v\n",reply.Success);
+                }
+
+            rf.mu.Unlock()
+        }(command)
+
+
+    default:
+        isLeader = false
+    }
 
 
 	return index, term, isLeader
@@ -472,10 +530,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                     }
                                                     appendEntriesArgs.Term         = rf.currentTerm
                                                     appendEntriesArgs.LeaderId     = rf.me
-                                                    appendEntriesArgs.PrevLogIndex = 0
-                                                    appendEntriesArgs.PrevLogTerm  = 0
+                                                    appendEntriesArgs.PrevLogIndex = len(rf.logs) - 1
+                                                    appendEntriesArgs.PrevLogTerm  = rf.logs[len(rf.logs) - 1].LogTerm
                                                     appendEntriesArgs.Entries      = nil
-                                                    appendEntriesArgs.LeaderCommit = 0
+                                                    appendEntriesArgs.LeaderCommit = rf.commitIndex
 
                                                     time.Sleep(period * time.Millisecond)
                                                     //DPrintf("[server index %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
