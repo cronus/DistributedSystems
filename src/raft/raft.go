@@ -87,9 +87,10 @@ type Raft struct {
 
     // extra
     state string
-    appendEntriesChan chan bool
-    voteReqChan chan bool
-    closeHeartBeat chan struct{}
+    t *time.Timer
+    //appendEntriesChan chan bool
+    //voteReqChan chan bool
+    //closeHeartBeat chan struct{}
     shutdown chan struct{}
 }
 
@@ -181,7 +182,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
     rf.mu.Lock()
     defer rf.mu.Unlock()
-    DPrintf("[RequestVote][server index:term %v:%v]voted for:%v. received RequestVote, candidate:%v, term:%v\n", rf.me, rf.currentTerm, rf.votedFor, args.CandidateId, args.Term )
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.VoteGranted  = false
@@ -193,13 +193,17 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     //    candidate's log is at least as up-to-date as receiver's log, then grant vote
     if (rf.votedFor == NULL || rf.votedFor == args.CandidateId) &&
             args.LastLogTerm >= rf.logs[rf.lastApplied].Term {
-        rf.currentTerm    = args.Term
-        rf.votedFor       = args.CandidateId
+        DPrintf("[RequestVote][server index:term %v:%v]voted for:%v. received RequestVote, candidate:%v, term:%v\n", rf.me, rf.currentTerm, rf.votedFor, args.CandidateId, args.Term )
         reply.Term        = args.Term 
         reply.VoteGranted = true
-        rf.mu.Unlock()
-        rf.voteReqChan <- true
-        rf.mu.Lock()
+        rf.currentTerm    = args.Term
+        rf.votedFor       = args.CandidateId
+        rf.state          = "Follower"
+        if !rf.t.Stop() {
+            <- rf.t.C
+        }
+        timeout := time.Duration(200 + rand.Int31n(200))
+        rf.t.Reset(timeout * time.Millisecond)
     } else {
         reply.VoteGranted = false
     }
@@ -277,7 +281,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
     // 4. append any new entries not already in the log
     if len(args.Entries) == 0 {
-        DPrintf("[server index:%v]received heartbeat\n", rf.me)
+        //DPrintf("[server index:%v]received heartbeat\n", rf.me)
     } else {
         for _, entry := range args.Entries {
             rf.logs = append(rf.logs, entry)
@@ -293,12 +297,13 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         }
     }
 
-    rf.currentTerm = args.Term
     reply.Success  = true
     reply.Term     = rf.currentTerm
-    rf.mu.Unlock()
-    rf.appendEntriesChan <- true
-    rf.mu.Lock()
+    rf.currentTerm = args.Term
+    rf.state       = "Follower"
+    rf.t.Stop()
+    timeout := time.Duration(200 + rand.Int31n(200))
+    rf.t.Reset(timeout * time.Millisecond)
     return
 }
 
@@ -374,38 +379,35 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.lastApplied = 0
 
     // heartbeat chan
-    rf.appendEntriesChan = make(chan bool)
-    rf.voteReqChan   = make(chan bool)
+    //rf.appendEntriesChan = make(chan bool)
+    //rf.voteReqChan   = make(chan bool)
 
     rf.state = "Follower"
     rf.shutdown = make(chan struct{})
-    rf.closeHeartBeat = make(chan struct{})
+    //rf.closeHeartBeat = make(chan struct{})
 
     go func(rf *Raft) {
-        var t *time.Timer
         //timeout := time.Duration(1000 * int32(rf.me) + 300)
         timeout := time.Duration(200 + rand.Int31n(200))
-        t = time.NewTimer(timeout * time.Millisecond)
+        rf.t = time.NewTimer(timeout * time.Millisecond)
         for {
+            rf.mu.Lock()
+            if rf.state == "Candidate" {
+                DPrintf("id:%v state:%v\n", rf.me, rf.state)
+            }
             select {
             case <-rf.shutdown:
                 return
-            case <-rf.appendEntriesChan:
-                t.Stop()
-                t.Reset(timeout * time.Millisecond)
-                rf.state = "Follower"
-            case <-rf.voteReqChan:
-                t.Stop()
-                t.Reset(timeout * time.Millisecond)
-                rf.state = "Follower"
             default:
                 switch rf.state {
                 case "Follower":
                     select {
-                    case <- t.C:
+                    case <- rf.t.C:
+                        DPrintf("id:%v change to candidate\n", rf.me)
                         rf.state = "Candidate"
                     default:
                     }
+                    rf.mu.Unlock()
 
                 case "Candidate":
                     requestVoteArgs  := new(RequestVoteArgs)
@@ -413,22 +415,20 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                     select {
                     // election timout elapses: start new election
-                    case <- t.C:
-                        t.Stop()
-                        timeout := time.Duration(200 + rand.Int31n(200))
-                        t = time.NewTimer(timeout * time.Millisecond)
+                    case <- rf.t.C:
+                        rf.t.Stop()
+                        timeout := time.Duration(200 + rand.Int31n(500))
+                        rf.t = time.NewTimer(timeout * time.Millisecond)
+                        rf.mu.Unlock()
                         continue
                     default:
                         // increment currentTerm
-                        if rf.votedFor != NULL {
-                           continue
-                        }
                         rf.currentTerm++
                         // vote for itself
                         rf.votedFor = rf.me
                         grantedCnt := 1
                         // reset election timer
-                        t.Reset(timeout * time.Millisecond)
+                        rf.t.Reset(timeout * time.Millisecond)
                         // send RequestVote to all other servers
                         DPrintf("[server index:%v] Candidate, election timeout %v, send RequestVote\n", me, timeout*time.Millisecond);
                         requestVoteArgs.Term         = rf.currentTerm
@@ -436,17 +436,30 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         requestVoteArgs.LastLogIndex = rf.commitIndex
                         requestVoteArgs.LastLogTerm  = rf.logs[rf.commitIndex].Term
 
-
+                        ok := make(chan bool)
                         for server, _ := range peers {
                             if server != me {
-                                ok := rf.sendRequestVote(server, requestVoteArgs, requestVoteReply)
-                                if ok && requestVoteReply.VoteGranted {
-                                    grantedCnt++
+                                go func(ok chan bool) {
+                                    ok = rf.sendRequestVote(server, requestVoteArgs, requestVoteReply)
+                                }(ok)
+                            }
+                        }
+                        
+                        ret := false
+                        loop:
+                            for {
+                                ret =<- ok
+                                if ret && requestVoteReply {
+                                   grantedCnt++
+                                   if 
                                 }
                             }
+                        if ok && requestVoteReply.VoteGranted {
+                            grantedCnt++
                         }
 
                         DPrintf("[server index:%v] Total granted peers: %v, total peers: %v\n", rf.me, grantedCnt, len(peers));
+                        rf.mu.Unlock()
 
                         // become leader if receive from majority of servers
                         if grantedCnt > len(peers) / 2 {
@@ -463,8 +476,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                     select {
                                     case <- rf.shutdown:
                                         return
-                                    case <- rf.closeHeartBeat:
-                                        return
+                                    //case <- rf.closeHeartBeat:
+                                    //    return
                                     default:
                                         appendEntriesArgs.Term         = rf.currentTerm
                                         appendEntriesArgs.LeaderId     = rf.me
@@ -474,10 +487,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         appendEntriesArgs.LeaderCommit = 0
 
                                         time.Sleep(period * time.Millisecond)
-                                        DPrintf("[server index %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
+                                        //DPrintf("[server index %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
                                         for server, _ := range peers {
                                             if server != me {
-                                                rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply)
+                                                go rf.sendAppendEntries(server, appendEntriesArgs, appendEntriesReply)
                                             }
                                         }
                                     }
@@ -488,6 +501,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 
                 case "Leader":
+                    rf.mu.Unlock()
                     //DPrintf("[server index %v]Leader\n", rf.me);
 
                     // if command received from client:
