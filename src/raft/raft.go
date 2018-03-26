@@ -369,19 +369,37 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                 if server != rf.me {
                     appendEntriesReply[server] = new(AppendEntriesReply)
                     go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply, replyChan chan *AppendEntriesReply) {
-                        rf.nextIndex[server]++
                         ok := rf.sendAppendEntries(server, args, reply)
 
                         if ok {
                             DPrintf("append entries RPC return from server %v, reply:%v\n", server, reply);
                             if reply.Success {
                                 rf.mu.Lock()
+                                rf.nextIndex[server]++
                                 rf.matchIndex[server]++
                                 DPrintf("leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
                                 DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
                                 rf.mu.Unlock()
                                 replyChan <- reply
                             } else {
+                                // Follower's log is inconsistency with Leader's
+                                // Assume no failure during the process
+                                rf.mu.Lock()
+                                DPrintf("Leader %v, force follower %v log consistent\n", rf.me, server)
+                                for ; rf.nextIndex[server] <= rf.commitIndex; rf.nextIndex[server]++ {
+                                    replyF := new(AppendEntriesReply)
+                                    entry := &AppendEntriesArgs{
+                                        Term          : rf.currentTerm,
+                                        LeaderId      : rf.me,
+                                        PrevLogIndex  : rf.nextIndex[server] - 1,
+                                        PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                                        Entries       : []LogEntry{rf.logs[rf.nextIndex[server]]},
+                                        LeaderCommit  : rf.commitIndex}
+                                    rf.sendAppendEntries(server, entry, replyF)
+                                    rf.matchIndex[server]++
+                                }
+                                rf.sendAppendEntries(server, args, reply)
+                                rf.mu.Unlock()
                             }
                         } else {
                             reply.Success = false
@@ -665,11 +683,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             CommandIndex: cntr}
                         rf.mu.Unlock()
                         applyCh <- applyMsg
+                        rf.mu.Lock()
                     }
                 } else {
                     rf.cond.Wait()
-                    rf.mu.Unlock()
                 }
+                rf.mu.Unlock()
             }
         }
 
