@@ -198,7 +198,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         rf.votedFor       = args.CandidateId
         rf.state          = "Follower"
         rf.t.Stop() 
-        timeout := time.Duration(300 + rand.Int31n(200))
+        timeout := time.Duration(800 + rand.Int31n(200))
         rf.t.Reset(timeout * time.Millisecond)
     } else {
         reply.VoteGranted = false
@@ -270,7 +270,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     rf.currentTerm = args.Term
     rf.state       = "Follower"
     rf.t.Stop() 
-    timeout := time.Duration(300 + rand.Int31n(200))
+    timeout := time.Duration(800 + rand.Int31n(200))
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
@@ -288,6 +288,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     } else {
         for _, entry := range args.Entries {
             rf.logs = append(rf.logs, entry)
+            // TODO update commit time, should delay to after receiver leader's LeaderCommit
             rf.commitIndex++
             rf.lastApplied++
         }
@@ -417,7 +418,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                 for {
                     select {
                     case reply =<- appendEntriesReplyCh:
-                        //DPrintf("append reply: %v\n", reply)
+                        DPrintf("append reply: %v\n", reply)
                         totalReturns++
                         if reply.Success {
                             appendOk++
@@ -430,12 +431,10 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                                 rf.cond.Broadcast()
                                 break loop
                             }
-
-                            if totalReturns == len(rf.peers) - 1 {
-                                rf.mu.Unlock()
-                                break loop
-                            }
                             rf.mu.Unlock()
+                        }
+                        if totalReturns == len(rf.peers) - 1 {
+                            break loop
                         }
                     default:
                     }
@@ -498,7 +497,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.shutdown = make(chan struct{})
 
     go func(rf *Raft) {
-        timeout := time.Duration(300 + rand.Int31n(200))
+        timeout := time.Duration(800 + rand.Int31n(200))
         rf.t = time.NewTimer(timeout * time.Millisecond)
         for {
             rf.mu.Lock()
@@ -562,7 +561,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             // election timout elapses: start new election
                             case <- rf.t.C:
                                 rf.t.Stop()
-                                timeout := time.Duration(300 + rand.Int31n(500))
+                                timeout := time.Duration(800 + rand.Int31n(500))
                                 rf.t = time.NewTimer(timeout * time.Millisecond)
                                 break loop
                             case reply =<- requestVoteReplyChan:
@@ -619,11 +618,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                                         break loop
                                     }
-                                    if totalReturns == len(peers) - 1 {
-                                        rf.state = "Followers"
-                                        break loop
-                                    } 
                                 }
+                                //if totalReturns == len(peers) - 1 {
+                                //    rf.mu.Lock()
+                                //    rf.state = "Followers"
+                                //    rf.mu.Unlock()
+                                //    break loop
+                                //} 
                             default:
                                 rf.mu.Unlock()
                                 rf.mu.Lock()
