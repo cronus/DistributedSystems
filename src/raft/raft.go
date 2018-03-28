@@ -366,6 +366,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                         LeaderCommit  : rf.commitIndex}
                 }
 
+                oks[server] = false
                 appendEntriesReply[server] = new(AppendEntriesReply)
             }
             rf.mu.Unlock()
@@ -406,38 +407,41 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
             //wg.Wait()
             appendSuccessCntr := 1
+            total := 0
+            dones := make([]int, 0)
             for doneIndex := range indexCh {
                 DPrintf("[server: %v]doneIndex: %v\n", rf.me, doneIndex)
+                total++
                 if oks[doneIndex] && appendEntriesReply[doneIndex].Success {
                     appendSuccessCntr++
+                    dones = append(dones, doneIndex)
                 }
-                if appendSuccessCntr < len(rf.peers) / 2 + 1 {
-
-                } else if appendSuccessCntr == len(rf.peers) / 2 + 1 {
+                if appendSuccessCntr == len(rf.peers) / 2 + 1 {
                     rf.mu.Lock()
                     rf.logs = append(rf.logs, *logEntry)
                     rf.commitIndex++
                     rf.lastApplied++
 
-                    for server, _ := range rf.peers {
-                        if server != rf.me {
-                            DPrintf("aaa:%v, %v\n", oks[server], appendEntriesReply[server].Success);
-                            if oks[server] && appendEntriesReply[server].Success {
-                                rf.nextIndex[server]++
-                                rf.matchIndex[server]++
-                                DPrintf("Just half, leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
-                                DPrintf("Just half, leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
-                            }
-                        }
+                    DPrintf("dones:%v\n", dones);
+                    for _, done := range dones {
+                        rf.nextIndex[done]++
+                        rf.matchIndex[done]++
+                        DPrintf("Just half, leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
+                        DPrintf("Just half, leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
                     }
 
                     rf.mu.Unlock()
                     rf.cond.Broadcast()
                 } else if appendSuccessCntr > len(rf.peers) / 2 + 1 {
+                    rf.mu.Lock()
                     rf.nextIndex[doneIndex]++
                     rf.matchIndex[doneIndex]++
                     DPrintf("More than half leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
                     DPrintf("More than half leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
+                    rf.mu.Unlock()
+                }
+                if total == len(rf.peers) - 1 {
+                    close(indexCh)
                 }
             }
 
