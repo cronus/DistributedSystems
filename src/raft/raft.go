@@ -198,7 +198,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         rf.votedFor       = args.CandidateId
         rf.state          = "Follower"
         rf.t.Stop() 
-        timeout := time.Duration(800 + rand.Int31n(200))
+        timeout := time.Duration(300 + rand.Int31n(500))
         rf.t.Reset(timeout * time.Millisecond)
     } else {
         reply.VoteGranted = false
@@ -270,7 +270,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     rf.currentTerm = args.Term
     rf.state       = "Follower"
     rf.t.Stop() 
-    timeout := time.Duration(800 + rand.Int31n(200))
+    timeout := time.Duration(300 + rand.Int31n(500))
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
@@ -340,85 +340,46 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
         term     = rf.currentTerm
         isLeader = true
 
-        //go func (rf *Raft, command interface{}) {
-        logEntry           := new(LogEntry)
-        appendEntriesArgs  := new(AppendEntriesArgs)
-        appendEntriesReply := make([]*AppendEntriesReply, len(rf.peers))
+        go func (rf *Raft, command interface{}) {
+            rf.mu.Lock()
+            logEntry           := new(LogEntry)
+            appendEntriesArgs  := make([]*AppendEntriesArgs, len(rf.peers))
+            appendEntriesReply := make([]*AppendEntriesReply, len(rf.peers))
+            oks                := make([]bool, len(rf.peers))
 
-        totalReturns := 0
-        appendOk     := 1
+            logEntry.Command = command
+            logEntry.LogTerm = rf.currentTerm
 
-        logEntry.Command = command
-        logEntry.LogTerm = rf.currentTerm
+            //var wg sync.WaitGroup
+            //wg.Add(len(rf.peers) - 1)
+            indexCh := make(chan int)
 
-        appendEntriesArgs.Entries       = make([]LogEntry, 1)
-        appendEntriesArgs.Term          = rf.currentTerm
-        appendEntriesArgs.LeaderId      = rf.me
-        appendEntriesArgs.PrevLogIndex  = len(rf.logs) - 1
-        appendEntriesArgs.PrevLogTerm   = rf.logs[len(rf.logs) - 1].LogTerm
-        appendEntriesArgs.Entries[0]    = *logEntry
-        appendEntriesArgs.LeaderCommit  = rf.commitIndex
+            DPrintf("[server: %v]appendEntriesArgs entry: %v\n", rf.me, *logEntry)
+            for server, _ := range rf.peers {
+                if server != rf.me {
+                    appendEntriesArgs[server] = &AppendEntriesArgs{
+                        Term          : rf.currentTerm,
+                        LeaderId      : rf.me,
+                        PrevLogIndex  : rf.nextIndex[server] - 1,
+                        PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                        Entries       : []LogEntry{*logEntry},
+                        LeaderCommit  : rf.commitIndex}
+                }
 
-        DPrintf("server: %v, appendEntriesArgs: %v\n", rf.me, appendEntriesArgs.Entries[0])
-
-        appendEntriesReplyCh := make(chan *AppendEntriesReply)
-        var l sync.Mutex
-        for server, _ := range rf.peers {
-            if server != rf.me {
                 appendEntriesReply[server] = new(AppendEntriesReply)
-                go func(rf *Raft, server int, total int, appendOk int, args *AppendEntriesArgs, reply *AppendEntriesReply, replyChan chan *AppendEntriesReply) {
-                    ok := rf.sendAppendEntries(server, args, reply)
-                    DPrintf("[server %v]append entries RPC return from server %v, reply:%v\n", rf.me, server, reply);
-                    l.Lock()
-                    total++
-                    if ok & reply.Success{
-                        appendOk++
-                    }
-                    l.Unlock()
+            }
+            rf.mu.Unlock()
 
-                    for total != len(rf.peers) {
-                        time.Sleep(1 * time.Millisecond)
-                    }
+            for server, _ := range rf.peers {
+                if server != rf.me {
 
-                    if ok {
-                        // rewrite
-                        if reply.Success {
-                            rf.mu.Lock()
-
-                            loop:
-                                for {
-                                    select {
-                                    case reply =<- appendEntriesReplyCh:
-                                        DPrintf("[server: %v]append reply: %v\n", rf.me, reply)
-                                        totalReturns++
-                                        if reply.Success {
-                                            appendOk++
-                                            rf.mu.Lock()
-                                            if appendOk > len(rf.peers) / 2 {
-                                                DPrintf("[server: %v]majority accept entry\n", rf.me)
-                                                rf.logs = append(rf.logs, *logEntry)
-                                                rf.commitIndex++
-                                                rf.lastApplied++
-                                                rf.mu.Unlock()
-                                                rf.cond.Broadcast()
-                                                break loop
-                                            }
-                                            rf.mu.Unlock()
-                                        }
-                                        if totalReturns == len(rf.peers) - 1 {
-                                            break loop
-                                        }
-                                    default:
-                                    }
-                                }
-
-                            rf.nextIndex[server]++
-                            rf.matchIndex[server]++
-                            DPrintf("leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
-                            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
-                            rf.mu.Unlock()
-                            replyChan <- reply
-                        } else {
+                    go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply, ok *bool) {
+                        *ok = rf.sendAppendEntries(server, args, reply)
+                        DPrintf("[server: %v]AppendEntries reply from follower %v, reply:%v\n", rf.me, server, reply);
+                        //wg.Done()
+                        indexCh <- server
+                        
+                        if *ok && !reply.Success{
                             // Follower's log is inconsistency with Leader's
                             // Assume no failure during the process
                             rf.mu.Lock()
@@ -438,44 +399,51 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                             rf.sendAppendEntries(server, args, reply)
                             rf.mu.Unlock()
                         }
-                    } else {
-                        reply.Success = false
-                        replyChan <- reply
-                    }
-                }(rf, totalReturns, appendOk, server, appendEntriesArgs, appendEntriesReply[server], appendEntriesReplyCh)
+                    }(rf, server, appendEntriesArgs[server], appendEntriesReply[server], &oks[server])
 
+                }
             }
-        }
-            // check replies
-            //reply := new(AppendEntriesReply)
-            //totalReturns := 0
-            //loop:
-            //    for {
-            //        select {
-            //        case reply =<- appendEntriesReplyCh:
-            //            DPrintf("[server: %v]append reply: %v\n", rf.me, reply)
-            //            totalReturns++
-            //            if reply.Success {
-            //                appendOk++
-            //                rf.mu.Lock()
-            //                if appendOk > len(rf.peers) / 2 {
-            //                    DPrintf("[server: %v]majority accept entry\n", rf.me)
-            //                    rf.logs = append(rf.logs, *logEntry)
-            //                    rf.commitIndex++
-            //                    rf.lastApplied++
-            //                    rf.mu.Unlock()
-            //                    rf.cond.Broadcast()
-            //                    break loop
-            //                }
-            //                rf.mu.Unlock()
-            //            }
-            //            if totalReturns == len(rf.peers) - 1 {
-            //                break loop
-            //            }
-            //        default:
-            //        }
-            //    }
-        //}(rf, command)
+
+            //wg.Wait()
+            appendSuccessCntr := 1
+            for doneIndex := range indexCh {
+                DPrintf("[server: %v]doneIndex: %v\n", rf.me, doneIndex)
+                if oks[doneIndex] && appendEntriesReply[doneIndex].Success {
+                    appendSuccessCntr++
+                }
+                if appendSuccessCntr < len(rf.peers) / 2 + 1 {
+
+                } else if appendSuccessCntr == len(rf.peers) / 2 + 1 {
+                    rf.mu.Lock()
+                    rf.logs = append(rf.logs, *logEntry)
+                    rf.commitIndex++
+                    rf.lastApplied++
+
+                    for server, _ := range rf.peers {
+                        if server != rf.me {
+                            DPrintf("aaa:%v, %v\n", oks[server], appendEntriesReply[server].Success);
+                            if oks[server] && appendEntriesReply[server].Success {
+                                rf.nextIndex[server]++
+                                rf.matchIndex[server]++
+                                DPrintf("Just half, leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
+                                DPrintf("Just half, leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
+                            }
+                        }
+                    }
+
+                    rf.mu.Unlock()
+                    rf.cond.Broadcast()
+                } else if appendSuccessCntr > len(rf.peers) / 2 + 1 {
+                    rf.nextIndex[doneIndex]++
+                    rf.matchIndex[doneIndex]++
+                    DPrintf("More than half leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
+                    DPrintf("More than half leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
+                }
+            }
+
+
+
+        }(rf, command)
 
 
     default:
@@ -533,7 +501,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.shutdown = make(chan struct{})
 
     go func(rf *Raft) {
-        timeout := time.Duration(800 + rand.Int31n(200))
+        timeout := time.Duration(300 + rand.Int31n(500))
         rf.t = time.NewTimer(timeout * time.Millisecond)
         for {
             rf.mu.Lock()
@@ -597,7 +565,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             // election timout elapses: start new election
                             case <- rf.t.C:
                                 rf.t.Stop()
-                                timeout := time.Duration(800 + rand.Int31n(500))
+                                timeout := time.Duration(300 + rand.Int31n(500))
                                 rf.t = time.NewTimer(timeout * time.Millisecond)
                                 break loop
                             case reply =<- requestVoteReplyChan:
