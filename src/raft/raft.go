@@ -260,7 +260,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// Your code here (2A, 2B).
     rf.mu.Lock()
     defer rf.mu.Unlock()
-    DPrintf("[server: %v]Term:%v, server log length: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, len(rf.logs), args, args.Term, len(args.Entries))
+    DPrintf("[server: %v]Term:%v, server log lastAppled %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.Success = false
@@ -287,7 +287,8 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         DPrintf("[server: %v]received heartbeat\n", rf.me)
     } else {
         for _, entry := range args.Entries {
-            rf.logs = append(rf.logs, entry)
+            rf.logs = append(rf.logs[:rf.commitIndex + 1], entry)
+            //rf.logs[args.PrevLogIndex + 1] = entry
             rf.lastApplied++
         }
     }
@@ -350,8 +351,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
             logEntry.Command = command
             logEntry.LogTerm = rf.currentTerm
 
-            //var wg sync.WaitGroup
-            //wg.Add(len(rf.peers) - 1)
             indexCh := make(chan int)
 
             DPrintf("[server: %v]appendEntriesArgs entry: %v\n", rf.me, *logEntry)
@@ -360,8 +359,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                     appendEntriesArgs[server] = &AppendEntriesArgs{
                         Term          : rf.currentTerm,
                         LeaderId      : rf.me,
-                        PrevLogIndex  : rf.nextIndex[server] - 1,
-                        PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                        PrevLogIndex  : rf.lastApplied,
+                        PrevLogTerm   : rf.logs[rf.lastApplied].LogTerm,
                         Entries       : []LogEntry{*logEntry},
                         LeaderCommit  : rf.commitIndex}
                 }
@@ -369,60 +368,67 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                 oks[server] = false
                 appendEntriesReply[server] = new(AppendEntriesReply)
             }
+            //rf.logs = append(rf.logs, *logEntry)
+            //rf.lastApplied++
             rf.mu.Unlock()
 
             for server, _ := range rf.peers {
                 if server != rf.me {
 
-                    go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply, ok *bool) {
+                    go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply, ok *bool, indexCh chan int) {
                         *ok = rf.sendAppendEntries(server, args, reply)
                         DPrintf("[server: %v]AppendEntries reply from follower %v, reply:%v\n", rf.me, server, reply);
-                        //wg.Done()
                         indexCh <- server
                         
-                        if *ok && !reply.Success{
-                            // Follower's log is inconsistency with Leader's
-                            // Assume no failure during the process
-                            rf.mu.Lock()
-                            DPrintf("Leader %v, force follower %v log consistent\n", rf.me, server)
-                            for ; rf.nextIndex[server] <= rf.commitIndex; rf.nextIndex[server]++ {
-                                replyF := new(AppendEntriesReply)
-                                entry := &AppendEntriesArgs{
-                                    Term          : rf.currentTerm,
-                                    LeaderId      : rf.me,
-                                    PrevLogIndex  : rf.nextIndex[server] - 1,
-                                    PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1].LogTerm,
-                                    Entries       : []LogEntry{rf.logs[rf.nextIndex[server]]},
-                                    LeaderCommit  : rf.commitIndex}
-                                rf.sendAppendEntries(server, entry, replyF)
-                                rf.matchIndex[server]++
-                            }
-                            rf.sendAppendEntries(server, args, reply)
-                            rf.mu.Unlock()
-                        }
-                    }(rf, server, appendEntriesArgs[server], appendEntriesReply[server], &oks[server])
+                    }(rf, server, appendEntriesArgs[server], appendEntriesReply[server], &oks[server], indexCh)
 
                 }
             }
 
-            //wg.Wait()
             appendSuccessCntr := 1
             total := 0
             dones := make([]int, 0)
+            committed := false
             for doneIndex := range indexCh {
-                DPrintf("[server: %v]doneIndex: %v\n", rf.me, doneIndex)
+                DPrintf("[server: %v]doneIndex: %v command: %v\n", rf.me, doneIndex, command)
                 total++
                 if oks[doneIndex] && appendEntriesReply[doneIndex].Success {
                     appendSuccessCntr++
                     dones = append(dones, doneIndex)
-                }
-                if appendSuccessCntr == len(rf.peers) / 2 + 1 {
+                } else if oks[doneIndex] && !appendEntriesReply[doneIndex].Success {
+                    // Follower's log is inconsistency with Leader's
+                    // Assume no failure during the process
                     rf.mu.Lock()
-                    rf.logs = append(rf.logs, *logEntry)
+                    DPrintf("Leader: %v, force follower %v log consistent\n", rf.me, doneIndex)
+                    for ; rf.nextIndex[doneIndex] <= rf.commitIndex; rf.nextIndex[doneIndex]++ {
+                        replyF := new(AppendEntriesReply)
+                        entry := &AppendEntriesArgs{
+                            Term          : rf.currentTerm,
+                            LeaderId      : rf.me,
+                            PrevLogIndex  : rf.nextIndex[doneIndex] - 1,
+                            PrevLogTerm   : rf.logs[rf.nextIndex[doneIndex] - 1].LogTerm,
+                            Entries       : []LogEntry{rf.logs[rf.nextIndex[doneIndex]]},
+                            LeaderCommit  : rf.commitIndex}
+                        rf.sendAppendEntries(doneIndex, entry, replyF)
+                        rf.matchIndex[doneIndex]++
+                    }
+                    if !committed {
+                        replyF := new(AppendEntriesReply)
+                        rf.sendAppendEntries(doneIndex, appendEntriesArgs[doneIndex], replyF)
+                        rf.matchIndex[doneIndex]++
+                        rf.nextIndex[doneIndex]++
+                        dones = append(dones, doneIndex)
+                    }
+                    rf.mu.Unlock()
+                }
+                if !committed && appendSuccessCntr == len(rf.peers) / 2 + 1 {
+                    committed = true
+                    rf.mu.Lock()
                     rf.commitIndex++
+                    rf.logs = append(rf.logs, *logEntry)
                     rf.lastApplied++
 
-                    DPrintf("dones:%v\n", dones);
+                    DPrintf("dones:%v, command: %v\n", dones, command);
                     for _, done := range dones {
                         rf.nextIndex[done]++
                         rf.matchIndex[done]++
@@ -441,6 +447,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                     rf.mu.Unlock()
                 }
                 if total == len(rf.peers) - 1 {
+                    DPrintf("close AppendEntries return int channel of command: %v\n", command)
                     close(indexCh)
                 }
             }
@@ -682,8 +689,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                 rf.mu.Unlock()
                 return
             default:
-                DPrintf("[server: %v]cntr: %v, commitIndex: %v\n", rf.me, cntr, rf.commitIndex);
                 if cntr <= rf.commitIndex {
+                    DPrintf("[server: %v]cntr: %v, commitIndex: %v\n", rf.me, cntr, rf.commitIndex);
                     for ; cntr <= rf.commitIndex; cntr++ {
                         applyMsg := ApplyMsg {
                             CommandValid: true,
