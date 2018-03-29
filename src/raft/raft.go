@@ -199,7 +199,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         rf.votedFor       = args.CandidateId
         rf.state          = "Follower"
         rf.t.Stop() 
-        timeout := time.Duration(200 + rand.Int31n(300))
+        timeout := time.Duration(300 + rand.Int31n(400))
         rf.t.Reset(timeout * time.Millisecond)
     } else {
         reply.VoteGranted = false
@@ -272,7 +272,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     rf.currentTerm = args.Term
     rf.state       = "Follower"
     rf.t.Stop() 
-    timeout := time.Duration(200 + rand.Int31n(300))
+    timeout := time.Duration(300 + rand.Int31n(400))
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
@@ -383,10 +383,14 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                 if server != rf.me {
 
                     go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply, indexCh chan int) {
-                        for ok := rf.sendAppendEntries(server, args, reply); !ok || !reply.Success; {
-                            time.Sleep(100 * time.Millisecond)
-                            ok = rf.sendAppendEntries(server, args, reply)
+                        trialReply := new(AppendEntriesReply)
+                        for ok := rf.sendAppendEntries(server, args, trialReply); !ok || !trialReply.Success; {
+                            time.Sleep(1000 * time.Millisecond)
+                            trialReply := new(AppendEntriesReply)
+                            ok = rf.sendAppendEntries(server, args, trialReply)
                         }
+                        reply.Term    = trialReply.Term
+                        reply.Success = trialReply.Success
                         DPrintf("[server: %v]AppendEntries reply from follower %v, reply:%v\n", rf.me, server, reply);
                         rf.mu.Lock()
                         rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
@@ -403,7 +407,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
             total := 0
             committed := false
             for doneIndex := range indexCh {
-                DPrintf("[server: %v]doneIndex: %v command: %v\n", rf.me, doneIndex, command)
+                DPrintf("[server: %v]doneIndex: %v logEntry: %v\n", rf.me, doneIndex, logEntry)
                 total++
                 if appendEntriesReply[doneIndex].Success {
                     appendSuccessCntr++
@@ -412,13 +416,12 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                     committed = true
                     rf.mu.Lock()
                     rf.commitIndex++
-                    //rf.logs = append(rf.logs, *logEntry)
 
                     rf.mu.Unlock()
                     rf.cond.Broadcast()
                 }
                 if total == len(rf.peers) - 1 {
-                    DPrintf("close AppendEntries return int channel of command: %v\n", command)
+                    DPrintf("close AppendEntries return int channel of logEntry: %v\n", logEntry)
                     close(indexCh)
                 }
             }
@@ -482,7 +485,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.shutdown = make(chan struct{})
 
     go func(rf *Raft) {
-        timeout := time.Duration(200 + rand.Int31n(300))
+        timeout := time.Duration(300 + rand.Int31n(400))
         rf.t = time.NewTimer(timeout * time.Millisecond)
         for {
             rf.mu.Lock()
@@ -546,7 +549,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             // election timout elapses: start new election
                             case <- rf.t.C:
                                 rf.t.Stop()
-                                timeout := time.Duration(200 + rand.Int31n(300))
+                                timeout := time.Duration(300 + rand.Int31n(400))
                                 rf.t.Reset(timeout * time.Millisecond)
                                 break loop
                             case reply =<- requestVoteReplyChan:
@@ -605,6 +608,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 // 1) if successful: update nextIndex and matchIndex for follower
                                 // 2) if AppendEntries fails because of log inconsistency:
                                 //    decrement nextIndex and retry
+                                rf.mu.Lock()
                                 if ok && !reply.Success && reply.Term == rf.currentTerm {
                                     for {
                                         rf.nextIndex[server]--
@@ -627,14 +631,14 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         LeaderId     : rf.me,
                                         PrevLogIndex : rf.nextIndex[server] - 1,
                                         PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
-                                        Entries      : rf.logs[rf.nextIndex[server] : rf.commitIndex + 1],
+                                        Entries      : rf.logs[rf.nextIndex[server] : ],
                                         LeaderCommit : rf.commitIndex}
 
                                     forceReply := new(AppendEntriesReply)
                                     rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
+                                    rf.nextIndex[server] = len(rf.logs)
                                 }
-
-                                
+                                rf.mu.Unlock()
                             }(server, appendEntriesArgs[server], appendEntriesReply[server])
                         }
                     }
