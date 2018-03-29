@@ -264,6 +264,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     DPrintf("[server: %v]Term:%v, server log lastApplied %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
+        reply.Term    = rf.currentTerm
         reply.Success = false
         return
     } 
@@ -275,12 +276,14 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
+        reply.Term = rf.currentTerm
         reply.Success = false
         return
     } else if rf.logs[args.PrevLogIndex].LogTerm != args.PrevLogTerm {
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
     //    delete the existing entry and all that follows it 
         rf.logs = rf.logs[:args.PrevLogIndex]
+        reply.Term    = rf.currentTerm
         reply.Success = false
         return
     }
@@ -334,6 +337,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	isLeader := true
 
 	// Your code here (2B).
+    // if command received from client:
+    // append entry to local log, respond after entry applied to state machine
     rf.mu.Lock()
     defer rf.mu.Unlock()
 
@@ -592,49 +597,54 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 LeaderCommit : rf.commitIndex}
 
                             appendEntriesReply[server] = new(AppendEntriesReply)
-                            go rf.sendAppendEntries(server, appendEntriesArgs[server], appendEntriesReply[server])
+                            go func(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
+                                ok := rf.sendAppendEntries(server, args, reply)
+
+                                // if last log index >= nextIndex for a follower:
+                                // send AppendEntries RPC with log entries starting at nextIndex
+                                // 1) if successful: update nextIndex and matchIndex for follower
+                                // 2) if AppendEntries fails because of log inconsistency:
+                                //    decrement nextIndex and retry
+                                if ok && !reply.Success && reply.Term == rf.currentTerm {
+                                    for {
+                                        rf.nextIndex[server]--
+                                        detectAppendEntriesArgs := &AppendEntriesArgs{
+                                            Term         : rf.currentTerm,
+                                            LeaderId     : rf.me,
+                                            PrevLogIndex : rf.nextIndex[server] - 1,
+                                            PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                                            Entries      : nil,
+                                            LeaderCommit : rf.commitIndex}
+                                        detectReply := new(AppendEntriesReply)
+                                        rf.sendAppendEntries(server, detectAppendEntriesArgs, detectReply)
+                                        if detectReply.Success {
+                                            break
+                                        }
+                                    }
+                                    DPrintf("[server: %v]Consistency check: nextIndex: %v", rf.me, rf.nextIndex)
+                                    forceAppendEntriesArgs := &AppendEntriesArgs{
+                                        Term         : rf.currentTerm,
+                                        LeaderId     : rf.me,
+                                        PrevLogIndex : rf.nextIndex[server] - 1,
+                                        PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                                        Entries      : rf.logs[rf.nextIndex[server] : rf.commitIndex + 1],
+                                        LeaderCommit : rf.commitIndex}
+
+                                    forceReply := new(AppendEntriesReply)
+                                    rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
+                                }
+
+                                
+                            }(server, appendEntriesArgs[server], appendEntriesReply[server])
                         }
                     }
-                    rf.mu.Unlock()
-                    time.Sleep(period * time.Millisecond)
-
-                    // if command received from client:
-                    // append entry to local log, respond after entry applied to state machine
-                    // Start() implements this
-
-                    // if last log index >= nextIndex for a follower:
-                    // send AppendEntries RPC with log entries starting at nextIndex
-                    // 1) if successful: update nextIndex and matchIndex for follower
-                    // 2) if AppendEntries fails because of log inconsistency:
-                    //    decrement nextIndex and retry
-
-                    //// Follower's log is inconsistency with Leader's
-                    //rf.mu.Lock()
-                    //DPrintf("Leader: %v, force follower %v log consistent\n", rf.me, doneIndex)
-                    //for ; rf.nextIndex[doneIndex] <= rf.commitIndex; rf.nextIndex[doneIndex]++ {
-                    //    replyF := new(AppendEntriesReply)
-                    //    entry := &AppendEntriesArgs{
-                    //        Term          : rf.currentTerm,
-                    //        LeaderId      : rf.me,
-                    //        PrevLogIndex  : rf.nextIndex[doneIndex] - 1,
-                    //        PrevLogTerm   : rf.logs[rf.nextIndex[doneIndex] - 1].LogTerm,
-                    //        Entries       : []LogEntry{rf.logs[rf.nextIndex[doneIndex]]},
-                    //        LeaderCommit  : rf.commitIndex}
-                    //    rf.sendAppendEntries(doneIndex, entry, replyF)
-                    //    rf.matchIndex[doneIndex]++
-                    //}
-                    //if !committed {
-                    //    replyF := new(AppendEntriesReply)
-                    //    rf.sendAppendEntries(doneIndex, appendEntriesArgs[doneIndex], replyF)
-                    //    rf.matchIndex[doneIndex]++
-                    //    rf.nextIndex[doneIndex]++
-                    //}
-                    //rf.mu.Unlock()
-
 
                     // if there exists an N such that N > commitIndex, a majority of matchIndex[i] >= N
                     // and log[N].term == currentTerm:
                     // set commitIndex = N
+
+                    rf.mu.Unlock()
+                    time.Sleep(period * time.Millisecond)
 
                 }
             }
