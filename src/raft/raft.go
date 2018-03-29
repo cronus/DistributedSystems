@@ -190,15 +190,16 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     // 2. votedFor is null or candidateId and
     //    candidate's log is at least as up-to-date as receiver's log, then grant vote
     if (rf.votedFor == NULL || rf.votedFor == args.CandidateId) &&
+            args.LastLogIndex >= rf.commitIndex &&
             args.LastLogTerm >= rf.logs[rf.commitIndex].LogTerm {
-        DPrintf("[RequestVote][server: %v]term :%v voted for:%v. received RequestVote, candidate:%v, term:%v\n", rf.me, rf.currentTerm, rf.votedFor, args.CandidateId, args.Term )
+        DPrintf("[RequestVote][server: %v]term :%v voted for:%v. received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, args)
         reply.Term        = args.Term 
         reply.VoteGranted = true
         rf.currentTerm    = args.Term
         rf.votedFor       = args.CandidateId
         rf.state          = "Follower"
         rf.t.Stop() 
-        timeout := time.Duration(300 + rand.Int31n(500))
+        timeout := time.Duration(200 + rand.Int31n(300))
         rf.t.Reset(timeout * time.Millisecond)
     } else {
         reply.VoteGranted = false
@@ -270,7 +271,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     rf.currentTerm = args.Term
     rf.state       = "Follower"
     rf.t.Stop() 
-    timeout := time.Duration(300 + rand.Int31n(500))
+    timeout := time.Duration(200 + rand.Int31n(300))
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
@@ -359,8 +360,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                     appendEntriesArgs[server] = &AppendEntriesArgs{
                         Term          : rf.currentTerm,
                         LeaderId      : rf.me,
-                        //PrevLogIndex  : len(rf.logs) - 1,
-                        //PrevLogTerm   : rf.logs[len(rf.logs) - 1].LogTerm,
                         PrevLogIndex  : rf.nextIndex[server] - 1,
                         PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1].LogTerm,
                         Entries       : []LogEntry{*logEntry},
@@ -478,23 +477,23 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.shutdown = make(chan struct{})
 
     go func(rf *Raft) {
-        timeout := time.Duration(300 + rand.Int31n(500))
+        timeout := time.Duration(200 + rand.Int31n(300))
         rf.t = time.NewTimer(timeout * time.Millisecond)
         for {
             rf.mu.Lock()
             if rf.state == "Candidate" {
-                DPrintf("[server :%v]state:%v\n", rf.me, rf.state)
+                DPrintf("[server: %v]state:%v\n", rf.me, rf.state)
             }
             select {
             case <-rf.shutdown:
-                DPrintf("[server: %v]close state machine goroutine\n", rf.me);
+                DPrintf("[server: %v]Close state machine goroutine\n", rf.me);
                 return
             default:
                 switch rf.state {
                 case "Follower":
                     select {
                     case <- rf.t.C:
-                        DPrintf("[server :%v]change to candidate\n", rf.me)
+                        DPrintf("[server: %v]change to candidate\n", rf.me)
                         rf.state = "Candidate"
                     default:
                     }
@@ -512,11 +511,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     // reset election timer
                     rf.t.Reset(timeout * time.Millisecond)
                     // send RequestVote to all other servers
-                    DPrintf("[server: %v] Candidate, election timeout %v, send RequestVote\n", me, timeout*time.Millisecond);
                     requestVoteArgs.Term         = rf.currentTerm + 1
                     requestVoteArgs.CandidateId  = rf.me
                     requestVoteArgs.LastLogIndex = rf.commitIndex
                     requestVoteArgs.LastLogTerm  = rf.logs[rf.commitIndex].LogTerm
+                    DPrintf("[server: %v] Candidate, election timeout %v, send RequestVote: %v\n", me, timeout*time.Millisecond, requestVoteArgs);
 
                     requestVoteReplyChan := make(chan *RequestVoteReply)
                     for server, _ := range peers {
@@ -542,8 +541,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             // election timout elapses: start new election
                             case <- rf.t.C:
                                 rf.t.Stop()
-                                timeout := time.Duration(300 + rand.Int31n(500))
-                                rf.t = time.NewTimer(timeout * time.Millisecond)
+                                timeout := time.Duration(200 + rand.Int31n(300))
+                                rf.t.Reset(timeout * time.Millisecond)
                                 break loop
                             case reply =<- requestVoteReplyChan:
                                 totalReturns++
@@ -565,14 +564,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 }
                             default:
                                 rf.mu.Unlock()
+                                time.Sleep(10 * time.Millisecond)
                                 rf.mu.Lock()
                             }
                         }
 
-                    DPrintf("[server:%v] Total granted peers: %v, total peers: %v\n", rf.me, grantedCnt, len(peers));
+                    DPrintf("[server: %v]Total granted peers: %v, total peers: %v\n", rf.me, grantedCnt, len(peers));
                     rf.mu.Unlock()
-
-
 
                 case "Leader":
 
@@ -582,7 +580,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     appendEntriesArgs  := make([]*AppendEntriesArgs, len(peers))
                     appendEntriesReply := make([]*AppendEntriesReply, len(peers))
 
-                    time.Sleep(period * time.Millisecond)
                     DPrintf("[server: %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
                     for server, _ := range peers {
                         if server != me {
@@ -599,6 +596,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         }
                     }
                     rf.mu.Unlock()
+                    time.Sleep(period * time.Millisecond)
 
                     // if command received from client:
                     // append entry to local log, respond after entry applied to state machine
@@ -649,7 +647,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
             rf.mu.Lock()
             select {
             case <- rf.shutdown:
-                DPrintf("Close logs handling goroutine\n")
+                DPrintf("[server: %v]Close logs handling goroutine\n", rf.me)
                 rf.mu.Unlock()
                 return
             default:
