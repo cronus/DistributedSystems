@@ -331,7 +331,7 @@ func TestBackup2B(t *testing.T) {
 
 	cfg.begin("Test (2B): leader backs up quickly over incorrect follower logs")
 
-	cfg.one(rand.Int(), servers, true)
+	cfg.one(9999, servers, true)
 
 	// put leader and one follower in a partition
 	leader1 := cfg.checkOneLeader()
@@ -341,7 +341,7 @@ func TestBackup2B(t *testing.T) {
 
 	// submit lots of commands that won't commit
 	for i := 0; i < 50; i++ {
-		cfg.rafts[leader1].Start(rand.Int())
+		cfg.rafts[leader1].Start(i)
 	}
 
 	time.Sleep(RaftElectionTimeout / 2)
@@ -356,7 +356,7 @@ func TestBackup2B(t *testing.T) {
 
 	// lots of successful commands to new group.
 	for i := 0; i < 50; i++ {
-		cfg.one(rand.Int(), 3, true)
+		cfg.one(50+i, 3, true)
 	}
 
 	// now another partitioned leader and one follower
@@ -369,9 +369,10 @@ func TestBackup2B(t *testing.T) {
 
 	// lots more commands that won't commit
 	for i := 0; i < 50; i++ {
-		cfg.rafts[leader2].Start(rand.Int())
+		cfg.rafts[leader2].Start(100+i)
 	}
 
+    fmt.Println("aa")
 	time.Sleep(RaftElectionTimeout / 2)
 
 	// bring original leader back to life,
@@ -382,16 +383,18 @@ func TestBackup2B(t *testing.T) {
 	cfg.connect((leader1 + 1) % servers)
 	cfg.connect(other)
 
+    fmt.Println("bb")
 	// lots of successful commands to new group.
 	for i := 0; i < 50; i++ {
-		cfg.one(rand.Int(), 3, true)
+		cfg.one(150+i, 3, true)
 	}
 
 	// now everyone
 	for i := 0; i < servers; i++ {
 		cfg.connect(i)
 	}
-	cfg.one(rand.Int(), servers, true)
+    fmt.Println("cc")
+	cfg.one(1000, servers, true)
 
 	cfg.end()
 }

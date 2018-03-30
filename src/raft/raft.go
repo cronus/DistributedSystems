@@ -261,7 +261,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// Your code here (2A, 2B).
     rf.mu.Lock()
     defer rf.mu.Unlock()
-    DPrintf("[server: %v]Term:%v, server log lastApplied %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
+    DPrintf("[server: %v]Term:%v, server log:%v lastApplied %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.logs, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.Term    = rf.currentTerm
@@ -294,7 +294,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     } else if len(rf.logs) == args.PrevLogIndex + 1{
         for i, entry := range args.Entries {
             rf.logs = append(rf.logs[:args.PrevLogIndex + i + 1], entry)
-            //rf.logs[args.PrevLogIndex + 1] = entry
         }
     }
 
@@ -348,7 +347,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
         term     = rf.currentTerm
         isLeader = true
 
-        logEntry           := new(LogEntry)
+        logEntry        := new(LogEntry)
         logEntry.Command = command
         logEntry.LogTerm = rf.currentTerm
         
@@ -378,25 +377,34 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
                 go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply, indexCh chan int) {
                     trialReply := new(AppendEntriesReply)
-                    for ok := rf.sendAppendEntries(server, args, trialReply); !ok || !trialReply.Success; {
-                        time.Sleep(1000 * time.Millisecond)
+                    for ok := rf.sendAppendEntries(server, args, trialReply); ; {
+                        time.Sleep(50 * time.Millisecond)
+                        if rf.state != "Leader" {
+                            return
+                        }
                         trialReply := new(AppendEntriesReply)
                         ok = rf.sendAppendEntries(server, args, trialReply)
+                        if ok && trialReply.Success {
+                            reply.Term    = trialReply.Term
+                            reply.Success = trialReply.Success
+                            rf.mu.Lock()
+                            rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
+                            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
+                            rf.mu.Unlock()
+                            break
+                        }
+                        if ok && trialReply.Term > args.Term {
+                            break
+                        }
                     }
-                    reply.Term    = trialReply.Term
-                    reply.Success = trialReply.Success
-                    DPrintf("[server: %v]AppendEntries reply from follower %v, reply:%v\n", rf.me, server, reply);
-                    rf.mu.Lock()
-                    rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
-                    DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
-                    rf.mu.Unlock()
+                    DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
                     indexCh <- server
                     
                 }(rf, server, appendEntriesArgs[server], appendEntriesReply[server], indexCh)
             }
         }
 
-        go func (rf *Raft, logEntry *LogEntry, indexCh chan int) {
+        go func (rf *Raft, replies []*AppendEntriesReply, logEntry *LogEntry, indexCh chan int) {
 
             appendSuccessCntr := 1
             total := 0
@@ -404,10 +412,11 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
             for doneIndex := range indexCh {
                 DPrintf("[server: %v]doneIndex: %v logEntry: %v\n", rf.me, doneIndex, logEntry)
                 total++
-                if appendEntriesReply[doneIndex].Success {
+                if replies[doneIndex].Success {
                     appendSuccessCntr++
                 }
                 if !committed && appendSuccessCntr == len(rf.peers) / 2 + 1 {
+                    DPrintf("[server: %v]more than half agreed: %v, on %v\n", rf.me, appendSuccessCntr, logEntry)
                     committed = true
                     rf.mu.Lock()
                     rf.commitIndex++
@@ -419,7 +428,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                     close(indexCh)
                 }
             }
-        }(rf, logEntry, indexCh)
+        }(rf, appendEntriesReply, logEntry, indexCh)
 
 
     default:
@@ -557,14 +566,16 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             rf.nextIndex[i]  = len(rf.logs)
                                             rf.matchIndex[i] = 0
                                         }
-
                                         break loop
                                     }
                                 }
                             default:
                                 rf.mu.Unlock()
-                                time.Sleep(10 * time.Millisecond)
+                                time.Sleep(1 * time.Millisecond)
                                 rf.mu.Lock()
+                                if rf.state == "Follower" {
+                                    break loop
+                                }
                             }
                         }
 
@@ -581,7 +592,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                     DPrintf("[server: %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
                     for server, _ := range peers {
-                        if server != me {
+                        if server != rf.me {
                             appendEntriesArgs[server] = &AppendEntriesArgs{
                                 Term         : rf.currentTerm,
                                 LeaderId     : rf.me,
@@ -627,7 +638,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                                     forceReply := new(AppendEntriesReply)
                                     rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
-                                    rf.nextIndex[server] = len(rf.logs)
+                                    rf.nextIndex[server]  = len(rf.logs)
+                                    rf.matchIndex[server] = len(rf.logs) - 1
                                 }
                                 rf.mu.Unlock()
                             }(server, appendEntriesArgs[server], appendEntriesReply[server])
