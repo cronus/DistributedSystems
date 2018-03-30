@@ -506,6 +506,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     default:
                     }
                     rf.mu.Unlock()
+                    time.Sleep(1 * time.Millisecond)
 
                 case "Candidate":
                     requestVoteArgs  := new(RequestVoteArgs)
@@ -661,13 +662,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
     go func(rf *Raft, applyCh chan ApplyMsg) {
 
         for {
-            rf.mu.Lock()
             select {
             case <- rf.shutdown:
                 DPrintf("[server: %v]Close logs handling goroutine\n", rf.me)
-                rf.mu.Unlock()
+                //rf.mu.Unlock()
                 return
             default:
+                rf.mu.Lock()
                 if rf.lastApplied < rf.commitIndex {
                     DPrintf("[server: %v]lastApplied: %v, commitIndex: %v\n", rf.me, rf.lastApplied, rf.commitIndex);
                     for rf.lastApplied < rf.commitIndex {
@@ -676,14 +677,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             CommandValid: true,
                             Command:      rf.logs[rf.lastApplied].Command,
                             CommandIndex: rf.lastApplied}
-                        rf.mu.Unlock()
+                        //rf.mu.Unlock()
                         DPrintf("[server: %v]send committed log to service: %v\n", rf.me, applyMsg)
                         applyCh <- applyMsg
-                        rf.mu.Lock()
+                        //rf.mu.Lock()
                     }
-                } else {
-                    rf.cond.Wait()
                 }
+                rf.cond.Wait()
                 rf.mu.Unlock()
             }
         }
