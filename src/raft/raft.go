@@ -358,8 +358,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
         appendEntriesArgs  := make([]*AppendEntriesArgs, len(rf.peers))
         appendEntriesReply := make([]*AppendEntriesReply, len(rf.peers))
 
-        //indexCh := make(chan int)
-
         for server, _ := range rf.peers {
             if server != rf.me {
                 appendEntriesArgs[server] = &AppendEntriesArgs{
@@ -375,63 +373,34 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
                 appendEntriesReply[server] = new(AppendEntriesReply)
 
-                go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
-                    trialReply := new(AppendEntriesReply)
-                    for ok := rf.sendAppendEntries(server, args, trialReply); ; {
-                        time.Sleep(50 * time.Millisecond)
-                        if rf.state != "Leader" {
-                            return
-                        }
-                        trialReply := new(AppendEntriesReply)
-                        ok = rf.sendAppendEntries(server, args, trialReply)
-                        if ok && trialReply.Success {
-                            reply.Term    = trialReply.Term
-                            reply.Success = trialReply.Success
-                            rf.mu.Lock()
-                            rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
-                            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
-                            rf.mu.Unlock()
-                            break
-                        }
-                        if ok && trialReply.Term > rf.currentTerm {
-                            rf.state = "Follower"
-                            break
-                        }
-                    }
-                    DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
-                    rf.cond.Broadcast()
-                    //indexCh <- server
-                    
-                }(rf, server, appendEntriesArgs[server], appendEntriesReply[server])
+                //go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
+                //    for {
+                //        if rf.state != "Leader" {
+                //            return
+                //        }
+                //        trialReply := new(AppendEntriesReply)
+                //        ok := rf.sendAppendEntries(server, args, trialReply)
+                //        if ok && trialReply.Success {
+                //            reply.Term    = trialReply.Term
+                //            reply.Success = trialReply.Success
+                //            rf.mu.Lock()
+                //            rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
+                //            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
+                //            rf.mu.Unlock()
+                //            break
+                //        }
+                //        if ok && trialReply.Term > rf.currentTerm {
+                //            rf.state = "Follower"
+                //            return
+                //        }
+                //        time.Sleep(20 * time.Millisecond)
+                //    }
+                //    DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
+                //    rf.cond.Broadcast()
+                //    
+                //}(rf, server, appendEntriesArgs[server], appendEntriesReply[server])
             }
         }
-
-        //go func (rf *Raft, replies []*AppendEntriesReply, logEntry *LogEntry, indexCh chan int) {
-
-        //    appendSuccessCntr := 1
-        //    total := 0
-        //    committed := false
-        //    for doneIndex := range indexCh {
-        //        DPrintf("[server: %v]doneIndex: %v logEntry: %v\n", rf.me, doneIndex, logEntry)
-        //        total++
-        //        if replies[doneIndex].Success {
-        //            appendSuccessCntr++
-        //        }
-        //        if !committed && appendSuccessCntr == len(rf.peers) / 2 + 1 {
-        //            DPrintf("[server: %v]more than half agreed: %v, on %v\n", rf.me, appendSuccessCntr, logEntry)
-        //            committed = true
-        //            rf.mu.Lock()
-        //            rf.commitIndex++
-        //            rf.mu.Unlock()
-        //            rf.cond.Broadcast()
-        //        }
-        //        if total == len(rf.peers) - 1 {
-        //            DPrintf("close AppendEntries return int channel of logEntry: %v\n", logEntry)
-        //            close(indexCh)
-        //        }
-        //    }
-        //}(rf, appendEntriesReply, logEntry, indexCh)
-
 
     default:
         isLeader = false
