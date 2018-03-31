@@ -393,7 +393,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                             rf.mu.Unlock()
                             break
                         }
-                        if ok && trialReply.Term > args.Term {
+                        if ok && trialReply.Term > rf.currentTerm {
+                            rf.state = "Follower"
                             break
                         }
                     }
@@ -629,6 +630,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             break
                                         }
                                         if detectReply.Term > rf.currentTerm {
+                                            rf.state = "Follower"
                                             return
                                         }
                                     }
