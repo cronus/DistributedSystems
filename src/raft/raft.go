@@ -373,32 +373,32 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
                 appendEntriesReply[server] = new(AppendEntriesReply)
 
-                //go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
-                //    for {
-                //        if rf.state != "Leader" {
-                //            return
-                //        }
-                //        trialReply := new(AppendEntriesReply)
-                //        ok := rf.sendAppendEntries(server, args, trialReply)
-                //        if ok && trialReply.Success {
-                //            reply.Term    = trialReply.Term
-                //            reply.Success = trialReply.Success
-                //            rf.mu.Lock()
-                //            rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
-                //            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
-                //            rf.mu.Unlock()
-                //            break
-                //        }
-                //        if ok && trialReply.Term > rf.currentTerm {
-                //            rf.state = "Follower"
-                //            return
-                //        }
-                //        time.Sleep(20 * time.Millisecond)
-                //    }
-                //    DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
-                //    rf.cond.Broadcast()
-                //    
-                //}(rf, server, appendEntriesArgs[server], appendEntriesReply[server])
+                go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
+                    for {
+                        if rf.state != "Leader" {
+                            return
+                        }
+                        trialReply := new(AppendEntriesReply)
+                        ok := rf.sendAppendEntries(server, args, trialReply)
+                        if ok && trialReply.Success {
+                            reply.Term    = trialReply.Term
+                            reply.Success = trialReply.Success
+                            rf.mu.Lock()
+                            rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
+                            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
+                            rf.mu.Unlock()
+                            break
+                        }
+                        if ok && trialReply.Term > rf.currentTerm {
+                            rf.state = "Follower"
+                            return
+                        }
+                        time.Sleep(20 * time.Millisecond)
+                    }
+                    DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
+                    rf.cond.Broadcast()
+                    
+                }(rf, server, appendEntriesArgs[server], appendEntriesReply[server])
             }
         }
 
