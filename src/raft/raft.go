@@ -358,7 +358,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
         appendEntriesArgs  := make([]*AppendEntriesArgs, len(rf.peers))
         appendEntriesReply := make([]*AppendEntriesReply, len(rf.peers))
 
-        indexCh := make(chan int)
+        //indexCh := make(chan int)
 
         for server, _ := range rf.peers {
             if server != rf.me {
@@ -375,7 +375,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
                 appendEntriesReply[server] = new(AppendEntriesReply)
 
-                go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply, indexCh chan int) {
+                go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
                     trialReply := new(AppendEntriesReply)
                     for ok := rf.sendAppendEntries(server, args, trialReply); ; {
                         time.Sleep(50 * time.Millisecond)
@@ -398,37 +398,38 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                         }
                     }
                     DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
-                    indexCh <- server
+                    rf.cond.Broadcast()
+                    //indexCh <- server
                     
-                }(rf, server, appendEntriesArgs[server], appendEntriesReply[server], indexCh)
+                }(rf, server, appendEntriesArgs[server], appendEntriesReply[server])
             }
         }
 
-        go func (rf *Raft, replies []*AppendEntriesReply, logEntry *LogEntry, indexCh chan int) {
+        //go func (rf *Raft, replies []*AppendEntriesReply, logEntry *LogEntry, indexCh chan int) {
 
-            appendSuccessCntr := 1
-            total := 0
-            committed := false
-            for doneIndex := range indexCh {
-                DPrintf("[server: %v]doneIndex: %v logEntry: %v\n", rf.me, doneIndex, logEntry)
-                total++
-                if replies[doneIndex].Success {
-                    appendSuccessCntr++
-                }
-                if !committed && appendSuccessCntr == len(rf.peers) / 2 + 1 {
-                    DPrintf("[server: %v]more than half agreed: %v, on %v\n", rf.me, appendSuccessCntr, logEntry)
-                    committed = true
-                    rf.mu.Lock()
-                    rf.commitIndex++
-                    rf.mu.Unlock()
-                    rf.cond.Broadcast()
-                }
-                if total == len(rf.peers) - 1 {
-                    DPrintf("close AppendEntries return int channel of logEntry: %v\n", logEntry)
-                    close(indexCh)
-                }
-            }
-        }(rf, appendEntriesReply, logEntry, indexCh)
+        //    appendSuccessCntr := 1
+        //    total := 0
+        //    committed := false
+        //    for doneIndex := range indexCh {
+        //        DPrintf("[server: %v]doneIndex: %v logEntry: %v\n", rf.me, doneIndex, logEntry)
+        //        total++
+        //        if replies[doneIndex].Success {
+        //            appendSuccessCntr++
+        //        }
+        //        if !committed && appendSuccessCntr == len(rf.peers) / 2 + 1 {
+        //            DPrintf("[server: %v]more than half agreed: %v, on %v\n", rf.me, appendSuccessCntr, logEntry)
+        //            committed = true
+        //            rf.mu.Lock()
+        //            rf.commitIndex++
+        //            rf.mu.Unlock()
+        //            rf.cond.Broadcast()
+        //        }
+        //        if total == len(rf.peers) - 1 {
+        //            DPrintf("close AppendEntries return int channel of logEntry: %v\n", logEntry)
+        //            close(indexCh)
+        //        }
+        //    }
+        //}(rf, appendEntriesReply, logEntry, indexCh)
 
 
     default:
@@ -627,6 +628,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         if detectReply.Success {
                                             break
                                         }
+                                        if detectReply.Term > rf.currentTerm {
+                                            return
+                                        }
                                     }
                                     DPrintf("[server: %v]Consistency check: nextIndex: %v", rf.me, rf.nextIndex)
                                     forceAppendEntriesArgs := &AppendEntriesArgs{
@@ -641,15 +645,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                     rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
                                     rf.nextIndex[server]  = len(rf.logs)
                                     rf.matchIndex[server] = len(rf.logs) - 1
+                                    rf.cond.Broadcast()
                                 }
                                 rf.mu.Unlock()
                             }(server, appendEntriesArgs[server], appendEntriesReply[server])
                         }
                     }
 
-                    // if there exists an N such that N > commitIndex, a majority of matchIndex[i] >= N
-                    // and log[N].term == currentTerm:
-                    // set commitIndex = N
 
                     rf.mu.Unlock()
                     time.Sleep(period * time.Millisecond)
@@ -660,7 +662,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
     }(rf)
 
     go func(rf *Raft, applyCh chan ApplyMsg) {
-
         for {
             select {
             case <- rf.shutdown:
@@ -668,7 +669,32 @@ func Make(peers []*labrpc.ClientEnd, me int,
                 //rf.mu.Unlock()
                 return
             default:
+                matchIndexCntr := make(map[int]int)
                 rf.mu.Lock()
+                // update rf.commitIndex based on matchIndex[]
+                // if there exists an N such that N > commitIndex, a majority of matchIndex[i] >= N
+                // and log[N].term == currentTerm:
+                // set commitIndex = N
+                if rf.state == "Leader" {
+                    rf.matchIndex[rf.me] = len(rf.logs) - 1
+                    for _, logIndex := range rf.matchIndex {
+                        if _, ok := matchIndexCntr[logIndex]; !ok {
+                            for _, logIndex2 := range rf.matchIndex {
+                                if logIndex <= logIndex2 {
+                                    matchIndexCntr[logIndex] += 1 
+                                }
+                            }
+                        }
+                    }
+                    // find the max one committed
+                    for index, matchNum := range matchIndexCntr {
+                        if matchNum > len(rf.peers) / 2 && index > rf.commitIndex {
+                            rf.commitIndex = index
+                        }
+                    }
+                    DPrintf("[server: %v]matchIndex: %v, cntr: %v, rf.commitIndex: %v\n", rf.me, rf.matchIndex, matchIndexCntr, rf.commitIndex)
+                }
+
                 if rf.lastApplied < rf.commitIndex {
                     DPrintf("[server: %v]lastApplied: %v, commitIndex: %v\n", rf.me, rf.lastApplied, rf.commitIndex);
                     for rf.lastApplied < rf.commitIndex {

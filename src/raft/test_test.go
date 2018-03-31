@@ -367,12 +367,12 @@ func TestBackup2B(t *testing.T) {
 	}
 	cfg.disconnect(other)
 
+    fmt.Printf("leader2:%v\n", leader2)
 	// lots more commands that won't commit
 	for i := 0; i < 50; i++ {
 		cfg.rafts[leader2].Start(100+i)
 	}
 
-    fmt.Println("aa")
 	time.Sleep(RaftElectionTimeout / 2)
 
 	// bring original leader back to life,
@@ -383,7 +383,7 @@ func TestBackup2B(t *testing.T) {
 	cfg.connect((leader1 + 1) % servers)
 	cfg.connect(other)
 
-    fmt.Println("bb")
+    fmt.Printf("bb, leader1: %v, other:%v\n", leader1, other)
 	// lots of successful commands to new group.
 	for i := 0; i < 50; i++ {
 		cfg.one(150+i, 3, true)
