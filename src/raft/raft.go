@@ -22,10 +22,10 @@ import "labrpc"
 import "math/rand"
 import "time"
 
-// import "bytes"
-// import "labgob"
+import "bytes"
+import "labgob"
 
-
+import "io"
 
 //
 // as each Raft peer becomes aware that successive log entries are
@@ -113,6 +113,11 @@ func (rf *Raft) GetState() (int, bool) {
 // save Raft's persistent state to stable storage,
 // where it can later be retrieved after a crash and restart.
 // see paper's Figure 2 for a description of what should be persistent.
+// func (enc *Encoder) Encode(e interface{}) error
+//     Encode transmit the data item represented by the empty interface value,
+//     guaranteeing that all necessary type information has been transmitted
+//     first. Passing a nil pointer to Encoder will panic, as they cannot be
+//     transmitted by gob.
 //
 func (rf *Raft) persist() {
 	// Your code here (2C).
@@ -123,13 +128,35 @@ func (rf *Raft) persist() {
 	// e.Encode(rf.yyy)
 	// data := w.Bytes()
 	// rf.persister.SaveRaftState(data)
+    buffer := new(bytes.Buffer)
+    e      := labgob.NewEncoder(buffer)
+    e.Encode(rf.currentTerm)
+    e.Encode(rf.votedFor)
+    for i, b := range rf.logs {
+        if i == 0 {
+            continue
+        }
+        e.Encode(b.LogTerm)
+        e.Encode(b.Command)
+    }
+    data := buffer.Bytes()
+    DPrintf("[server: %v]Encode: rf currentTerm: %v, votedFor: %v, log:%v, persist data: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, data)
+    rf.persister.SaveRaftState(data)
 }
 
 
 //
 // restore previously persisted state.
+// func (*Deocder) Decode(e interface{}) error
+//     Decode reads the next value from the input stream and stores it in 
+//     the data represented by the empty interface value. If e is nil, the 
+//     value will be discarded.
+//     Otherwise, the value underlying e must be a pointer to the correct
+//     type for the next data item received. If the input is at EOF, 
+//     Decode returns io.EOF and does not modify e
 //
 func (rf *Raft) readPersist(data []byte) {
+    DPrintf("[server: %v]read persist data: %v, len of data: %v\n", rf.me, data, len(data));
 	if data == nil || len(data) < 1 { // bootstrap without any state?
 		return
 	}
@@ -146,6 +173,39 @@ func (rf *Raft) readPersist(data []byte) {
 	//   rf.xxx = xxx
 	//   rf.yyy = yyy
 	// }
+
+    buffer := bytes.NewBuffer(data)
+    d      := labgob.NewDecoder(buffer)
+    var currentTerm int
+    var votedFor int
+    var log LogEntry
+    if d.Decode(&currentTerm) != nil ||
+       d.Decode(&votedFor)    != nil {
+       DPrintf("error in decode currentTerm and votedFor, err: %v\n", d.Decode(&currentTerm)) 
+    } else {
+        rf.currentTerm = currentTerm
+        rf.votedFor    = votedFor
+    }
+    for {
+        var term int
+        var command int
+        if err := d.Decode(&term); err != nil {
+            if err == io.EOF {
+                break
+            } else {
+                DPrintf("error when decode log, err: %v\n", d.Decode(&term)) 
+            }
+        } else {
+            log.LogTerm = term
+        }
+        if err := d.Decode(&command); err != nil {
+        } else {
+            log.Command = command
+        }
+        rf.logs = append(rf.logs, log)
+    }
+    DPrintf("[server: %v]Decode: rf currentTerm: %v, votedFor: %v, log:%v, persist data: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, data)
+    
 }
 
 
@@ -668,16 +728,15 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                 if rf.lastApplied < rf.commitIndex {
                     DPrintf("[server: %v]lastApplied: %v, commitIndex: %v\n", rf.me, rf.lastApplied, rf.commitIndex);
+                    rf.persist()
                     for rf.lastApplied < rf.commitIndex {
                         rf.lastApplied++
                         applyMsg := ApplyMsg {
                             CommandValid: true,
                             Command:      rf.logs[rf.lastApplied].Command,
                             CommandIndex: rf.lastApplied}
-                        //rf.mu.Unlock()
                         DPrintf("[server: %v]send committed log to service: %v\n", rf.me, applyMsg)
                         applyCh <- applyMsg
-                        //rf.mu.Lock()
                     }
                 }
                 rf.cond.Wait()
