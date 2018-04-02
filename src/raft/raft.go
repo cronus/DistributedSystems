@@ -314,6 +314,7 @@ type AppendEntriesArgs struct {
 
 type AppendEntriesReply struct {
     Term int
+    FirstTermIndex int
     Success bool
 }
 
@@ -329,7 +330,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         return
     } 
 
-    rf.currentTerm = args.Term
     rf.state       = "Follower"
     rf.t.Stop() 
     timeout := time.Duration(300 + rand.Int31n(400))
@@ -337,12 +337,24 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
         reply.Term = rf.currentTerm
+        reply.FirstTermIndex = len(rf.logs)
         reply.Success = false
         return
     } else if rf.logs[args.PrevLogIndex].LogTerm != args.PrevLogTerm {
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
     //    delete the existing entry and all that follows it 
-        rf.logs = rf.logs[:args.PrevLogIndex]
+        //rf.logs = rf.logs[:args.PrevLogIndex]
+        reply.FirstTermIndex = args.PrevLogIndex
+        for rf.logs[reply.FirstTermIndex].LogTerm == rf.logs[reply.FirstTermIndex - 1].LogTerm {
+            if reply.FirstTermIndex > rf.commitIndex {
+                reply.FirstTermIndex--
+            } else {
+                reply.FirstTermIndex = rf.commitIndex + 1
+                break
+            }
+            DPrintf("[server: %v]FirstTermIndex: %v\n", rf.me, reply.FirstTermIndex)
+        }
+        rf.logs = rf.logs[:reply.FirstTermIndex]
         reply.Term    = rf.currentTerm
         reply.Success = false
         return
@@ -367,6 +379,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         rf.cond.Broadcast()
     }
 
+    rf.currentTerm = args.Term
     reply.Success  = true
     reply.Term     = rf.currentTerm
     return
@@ -454,7 +467,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                             rf.state = "Follower"
                             return
                         }
-                        time.Sleep(20 * time.Millisecond)
+                        time.Sleep(500 * time.Millisecond)
                     }
                     DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
                     rf.cond.Broadcast()
@@ -644,9 +657,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 // 2) if AppendEntries fails because of log inconsistency:
                                 //    decrement nextIndex and retry
                                 rf.mu.Lock()
-                                if ok && !reply.Success && reply.Term == rf.currentTerm {
+                                if ok && !reply.Success && reply.Term <= rf.currentTerm {
                                     for {
-                                        rf.nextIndex[server]--
+                                        //rf.nextIndex[server]--
+                                        rf.nextIndex[server] = reply.FirstTermIndex 
                                         detectAppendEntriesArgs := &AppendEntriesArgs{
                                             Term         : rf.currentTerm,
                                             LeaderId     : rf.me,
