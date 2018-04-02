@@ -204,6 +204,8 @@ func (rf *Raft) readPersist(data []byte) {
         }
         rf.logs = append(rf.logs, log)
     }
+    rf.commitIndex = len(rf.logs) - 1
+    rf.lastApplied = len(rf.logs) - 1
     DPrintf("[server: %v]Decode: rf currentTerm: %v, votedFor: %v, log:%v, persist data: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, data)
     
 }
@@ -245,17 +247,17 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         reply.VoteGranted  = false
     } else if args.Term > rf.currentTerm {
         rf.votedFor = NULL
+        rf.currentTerm    = args.Term
     }
 
     // 2. votedFor is null or candidateId and
     //    candidate's log is at least as up-to-date as receiver's log, then grant vote
     if (rf.votedFor == NULL || rf.votedFor == args.CandidateId) &&
-            args.LastLogIndex >= rf.commitIndex &&
-            args.LastLogTerm >= rf.logs[rf.commitIndex].LogTerm {
-        DPrintf("[RequestVote][server: %v]term :%v voted for:%v. received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, args)
-        reply.Term        = args.Term 
+            (args.LastLogIndex >= rf.commitIndex) &&
+            (args.LastLogTerm >= rf.logs[rf.commitIndex].LogTerm) {
+        DPrintf("[RequestVote][server: %v]term :%v voted for:%v, logs: %v, commitIndex: %v, received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, rf.commitIndex, args)
+        reply.Term        = rf.currentTerm 
         reply.VoteGranted = true
-        rf.currentTerm    = args.Term
         rf.votedFor       = args.CandidateId
         rf.state          = "Follower"
         rf.t.Stop() 
@@ -743,7 +745,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
                 if rf.lastApplied < rf.commitIndex {
                     DPrintf("[server: %v]lastApplied: %v, commitIndex: %v\n", rf.me, rf.lastApplied, rf.commitIndex);
-                    rf.persist()
                     for rf.lastApplied < rf.commitIndex {
                         rf.lastApplied++
                         applyMsg := ApplyMsg {
@@ -753,6 +754,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         DPrintf("[server: %v]send committed log to service: %v\n", rf.me, applyMsg)
                         applyCh <- applyMsg
                     }
+                    rf.persist()
                 }
                 rf.cond.Wait()
                 rf.mu.Unlock()
