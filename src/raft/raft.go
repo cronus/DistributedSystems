@@ -136,6 +136,9 @@ func (rf *Raft) persist() {
         if i == 0 {
             continue
         }
+        if i > rf.commitIndex {
+            break
+        }
         e.Encode(b.LogTerm)
         e.Encode(b.Command)
     }
@@ -242,6 +245,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
     rf.mu.Lock()
     defer rf.mu.Unlock()
+    DPrintf("[Enter RequestVote][server: %v]term :%v voted for:%v, logs: %v, commitIndex: %v, received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, rf.commitIndex, args)
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.VoteGranted  = false
@@ -572,8 +576,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     // send RequestVote to all other servers
                     requestVoteArgs.Term         = rf.currentTerm + 1
                     requestVoteArgs.CandidateId  = rf.me
-                    requestVoteArgs.LastLogIndex = rf.commitIndex
-                    requestVoteArgs.LastLogTerm  = rf.logs[rf.commitIndex].LogTerm
+                    //requestVoteArgs.LastLogIndex = rf.commitIndex
+                    //requestVoteArgs.LastLogTerm  = rf.logs[rf.commitIndex].LogTerm
+                    requestVoteArgs.LastLogIndex = len(rf.logs) - 1
+                    requestVoteArgs.LastLogTerm  = rf.logs[len(rf.logs) - 1].LogTerm
                     DPrintf("[server: %v] Candidate, election timeout %v, send RequestVote: %v\n", me, timeout*time.Millisecond, requestVoteArgs);
 
                     requestVoteReplyChan := make(chan *RequestVoteReply)
