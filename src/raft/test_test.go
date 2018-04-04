@@ -737,7 +737,7 @@ func TestFigure8Unreliable2C(t *testing.T) {
 
 	nup := servers
 	for iters := 0; iters < 1000; iters++ {
-        fmt.Printf("\niter: %v\n", iters)
+        //fmt.Printf("\niter: %v\n", iters)
 		if iters == 200 {
 			cfg.setlongreordering(true)
 		}
@@ -782,7 +782,7 @@ func TestFigure8Unreliable2C(t *testing.T) {
 
     fmt.Println("bbbb")
 	cfg.one(1000, servers, true)
-
+    fmt.Println("cccc")
 	cfg.end()
 }
 

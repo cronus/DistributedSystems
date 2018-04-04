@@ -252,6 +252,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     } else if args.Term > rf.currentTerm {
         rf.votedFor = NULL
         rf.currentTerm    = args.Term
+        rf.state          = "Follower"
     }
 
     // 2. votedFor is null or candidateId and
@@ -266,7 +267,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         reply.Term        = rf.currentTerm 
         reply.VoteGranted = true
         rf.votedFor       = args.CandidateId
-        rf.state          = "Follower"
         rf.t.Stop() 
         timeout := time.Duration(300 + rand.Int31n(400))
         rf.t.Reset(timeout * time.Millisecond)
@@ -463,22 +463,26 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                         }
                         trialReply := new(AppendEntriesReply)
                         ok := rf.sendAppendEntries(server, args, trialReply)
+                        rf.mu.Lock()
+                        if ok && args.Term != rf.currentTerm {
+                            rf.mu.Unlock()
+                            return
+                        }
                         if ok && trialReply.Success {
                             reply.Term    = trialReply.Term
                             reply.Success = trialReply.Success
-                            rf.mu.Lock()
                             rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
                             DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
                             rf.mu.Unlock()
                             break
                         }
                         if ok && trialReply.Term > rf.currentTerm {
-                            rf.mu.Lock()
                             rf.state = "Follower"
                             rf.currentTerm = trialReply.Term
                             rf.mu.Unlock()
                             return
                         }
+                        rf.mu.Unlock()
                         time.Sleep(500 * time.Millisecond)
                     }
                     DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
@@ -673,16 +677,21 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 // 2) if AppendEntries fails because of log inconsistency:
                                 //    decrement nextIndex and retry
                                 rf.mu.Lock()
+                                // if get an old RPC reply
+                                if ok && args.Term != rf.currentTerm {
+                                    rf.mu.Unlock()
+                                    return
+                                }
                                 if ok && !reply.Success {
                                     if rf.state != "Leader" {
                                         rf.mu.Unlock()
                                         return
                                     }
                                     if reply.Term <= rf.currentTerm {
+                                        rf.nextIndex[server] = reply.FirstTermIndex 
                                         for {
                                             //rf.nextIndex[server]--
-                                            DPrintf("abc:%v, reply: %v\n", rf, reply)
-                                            rf.nextIndex[server] = reply.FirstTermIndex 
+                                            DPrintf("abc:%v, server: %v reply: %v\n", rf, server, reply)
                                             detectAppendEntriesArgs := &AppendEntriesArgs{
                                                 Term         : rf.currentTerm,
                                                 LeaderId     : rf.me,
@@ -691,7 +700,17 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 Entries      : nil,
                                                 LeaderCommit : rf.commitIndex}
                                             detectReply := new(AppendEntriesReply)
-                                            rf.sendAppendEntries(server, detectAppendEntriesArgs, detectReply)
+                                            ok1 := rf.sendAppendEntries(server, detectAppendEntriesArgs, detectReply)
+                                            if !ok1 {
+                                                DPrintf("[server: %v]not receive from %v\n", rf.me, server)
+                                                rf.nextIndex[server] = len(rf.logs)
+                                                rf.mu.Unlock()
+                                                return
+                                            }
+                                            if ok1 && args.Term != rf.currentTerm {
+                                                rf.mu.Unlock()
+                                                return
+                                            }
                                             if detectReply.Success {
                                                 break
                                             }
@@ -701,6 +720,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 rf.mu.Unlock()
                                                 return
                                             }
+                                            rf.nextIndex[server] = detectReply.FirstTermIndex 
                                         }
                                         DPrintf("[server: %v]Consistency check: nextIndex: %v", rf.me, rf.nextIndex)
                                         forceAppendEntriesArgs := &AppendEntriesArgs{
@@ -712,16 +732,25 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             LeaderCommit : rf.commitIndex}
 
                                         forceReply := new(AppendEntriesReply)
-                                        rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
-                                        if forceReply.Term > rf.currentTerm {
-                                            rf.state = "Follower"
-                                            rf.currentTerm = forceReply.Term
-                                            rf.mu.Unlock()
-                                            return
+                                        ok2 := rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
+                                        if ok2 {
+                                            if args.Term != rf.currentTerm {
+                                                return
+                                            }
+                                            if forceReply.Term > rf.currentTerm {
+                                                rf.state = "Follower"
+                                                rf.currentTerm = forceReply.Term
+                                                rf.mu.Unlock()
+                                                return
+                                            } else {
+                                                rf.nextIndex[server]  = len(rf.logs)
+                                                rf.matchIndex[server] = len(rf.logs) - 1
+                                                rf.cond.Broadcast()
+                                            }
+                                        } else {
+                                            rf.nextIndex[server]  = len(rf.logs)
+                                            rf.matchIndex[server] = len(rf.logs) - 1
                                         }
-                                        rf.nextIndex[server]  = len(rf.logs)
-                                        rf.matchIndex[server] = len(rf.logs) - 1
-                                        rf.cond.Broadcast()
                                     } else {
                                         rf.state = "Follower"
                                         rf.currentTerm = reply.Term
