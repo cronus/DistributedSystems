@@ -473,7 +473,10 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                             break
                         }
                         if ok && trialReply.Term > rf.currentTerm {
+                            rf.mu.Lock()
                             rf.state = "Follower"
+                            rf.currentTerm = trialReply.Term
+                            rf.mu.Unlock()
                             return
                         }
                         time.Sleep(500 * time.Millisecond)
@@ -501,6 +504,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 //
 func (rf *Raft) Kill() {
 	// Your code here, if desired.
+    rf.mu.Lock()
+    defer rf.mu.Unlock()
     close(rf.shutdown)
 }
 
@@ -668,41 +673,60 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 // 2) if AppendEntries fails because of log inconsistency:
                                 //    decrement nextIndex and retry
                                 rf.mu.Lock()
-                                if ok && !reply.Success && reply.Term <= rf.currentTerm {
-                                    for {
-                                        //rf.nextIndex[server]--
-                                        rf.nextIndex[server] = reply.FirstTermIndex 
-                                        detectAppendEntriesArgs := &AppendEntriesArgs{
+                                if ok && !reply.Success {
+                                    if rf.state != "Leader" {
+                                        rf.mu.Unlock()
+                                        return
+                                    }
+                                    if reply.Term <= rf.currentTerm {
+                                        for {
+                                            //rf.nextIndex[server]--
+                                            DPrintf("abc:%v, reply: %v\n", rf, reply)
+                                            rf.nextIndex[server] = reply.FirstTermIndex 
+                                            detectAppendEntriesArgs := &AppendEntriesArgs{
+                                                Term         : rf.currentTerm,
+                                                LeaderId     : rf.me,
+                                                PrevLogIndex : rf.nextIndex[server] - 1,
+                                                PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                                                Entries      : nil,
+                                                LeaderCommit : rf.commitIndex}
+                                            detectReply := new(AppendEntriesReply)
+                                            rf.sendAppendEntries(server, detectAppendEntriesArgs, detectReply)
+                                            if detectReply.Success {
+                                                break
+                                            }
+                                            if detectReply.Term > rf.currentTerm {
+                                                rf.state = "Follower"
+                                                rf.currentTerm = detectReply.Term
+                                                rf.mu.Unlock()
+                                                return
+                                            }
+                                        }
+                                        DPrintf("[server: %v]Consistency check: nextIndex: %v", rf.me, rf.nextIndex)
+                                        forceAppendEntriesArgs := &AppendEntriesArgs{
                                             Term         : rf.currentTerm,
                                             LeaderId     : rf.me,
                                             PrevLogIndex : rf.nextIndex[server] - 1,
                                             PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
-                                            Entries      : nil,
+                                            Entries      : rf.logs[rf.nextIndex[server] : ],
                                             LeaderCommit : rf.commitIndex}
-                                        detectReply := new(AppendEntriesReply)
-                                        rf.sendAppendEntries(server, detectAppendEntriesArgs, detectReply)
-                                        if detectReply.Success {
-                                            break
-                                        }
-                                        if detectReply.Term > rf.currentTerm {
+
+                                        forceReply := new(AppendEntriesReply)
+                                        rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
+                                        if forceReply.Term > rf.currentTerm {
                                             rf.state = "Follower"
+                                            rf.currentTerm = forceReply.Term
+                                            rf.mu.Unlock()
                                             return
                                         }
+                                        rf.nextIndex[server]  = len(rf.logs)
+                                        rf.matchIndex[server] = len(rf.logs) - 1
+                                        rf.cond.Broadcast()
+                                    } else {
+                                        rf.state = "Follower"
+                                        rf.currentTerm = reply.Term
+                                        DPrintf("[server: %v]dddd\n", rf.me)
                                     }
-                                    DPrintf("[server: %v]Consistency check: nextIndex: %v", rf.me, rf.nextIndex)
-                                    forceAppendEntriesArgs := &AppendEntriesArgs{
-                                        Term         : rf.currentTerm,
-                                        LeaderId     : rf.me,
-                                        PrevLogIndex : rf.nextIndex[server] - 1,
-                                        PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
-                                        Entries      : rf.logs[rf.nextIndex[server] : ],
-                                        LeaderCommit : rf.commitIndex}
-
-                                    forceReply := new(AppendEntriesReply)
-                                    rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
-                                    rf.nextIndex[server]  = len(rf.logs)
-                                    rf.matchIndex[server] = len(rf.logs) - 1
-                                    rf.cond.Broadcast()
                                 }
                                 rf.mu.Unlock()
                             }(server, appendEntriesArgs[server], appendEntriesReply[server])
