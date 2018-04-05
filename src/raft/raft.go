@@ -177,6 +177,8 @@ func (rf *Raft) readPersist(data []byte) {
 	//   rf.yyy = yyy
 	// }
 
+    rf.mu.Lock()
+    defer rf.mu.Unlock()
     buffer := bytes.NewBuffer(data)
     d      := labgob.NewDecoder(buffer)
     var currentTerm int
@@ -458,13 +460,14 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
                 go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
                     for {
-                        if rf.state != "Leader" {
-                            return
-                        }
                         trialReply := new(AppendEntriesReply)
                         ok := rf.sendAppendEntries(server, args, trialReply)
                         rf.mu.Lock()
-                        if ok && args.Term != rf.currentTerm {
+                        if rf.state != "Leader" {
+                            rf.mu.Unlock()
+                            return
+                        }
+                        if args.Term != rf.currentTerm {
                             rf.mu.Unlock()
                             return
                         }
