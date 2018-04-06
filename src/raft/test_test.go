@@ -733,17 +733,17 @@ func TestFigure8Unreliable2C(t *testing.T) {
 
 	cfg.begin("Test (2C): Figure 8 (unreliable)")
 
+	//cfg.one(rand.Int()%10000, 1, true)
 	cfg.one(9999, 1, true)
 
 	nup := servers
 	for iters := 0; iters < 1000; iters++ {
-        //fmt.Printf("\niter: %v\n", iters)
 		if iters == 200 {
 			cfg.setlongreordering(true)
 		}
 		leader := -1
 		for i := 0; i < servers; i++ {
-			_, _, ok := cfg.rafts[i].Start(iters)
+			_, _, ok := cfg.rafts[i].Start(rand.Int() % 10000)
 			if ok && cfg.connected[i] {
                 fmt.Printf("aaa, %v, leader: %v\n",iters, i)
 				leader = i
@@ -781,8 +781,8 @@ func TestFigure8Unreliable2C(t *testing.T) {
 	}
 
     fmt.Println("bbbb")
-	cfg.one(1000, servers, true)
-    fmt.Println("cccc")
+	//cfg.one(rand.Int()%10000, servers, true)
+	cfg.one(8888, servers, true)
 	cfg.end()
 }
 

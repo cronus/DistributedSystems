@@ -247,7 +247,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
     rf.mu.Lock()
     defer rf.mu.Unlock()
-    DPrintf("[Enter RequestVote][server: %v]term :%v voted for:%v, logs: %v, commitIndex: %v, received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, rf.commitIndex, args)
+    DPrintf("[Enter RequestVote][server: %v]term :%v voted for:%v, log len: %v, logs: %v, commitIndex: %v, received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, len(rf.logs), rf.logs, rf.commitIndex, args)
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.VoteGranted  = false
@@ -347,6 +347,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
+        DPrintf("[server: %v] log doesn't contain PrevLogIndex\n", rf.me)
         reply.Term = rf.currentTerm
         reply.FirstTermIndex = len(rf.logs)
         reply.Success = false
@@ -355,6 +356,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
     //    delete the existing entry and all that follows it 
         //rf.logs = rf.logs[:args.PrevLogIndex]
+        DPrintf("[server: %v] log contains PrevLogIndex, but term doesn't match\n", rf.me)
         reply.FirstTermIndex = args.PrevLogIndex
         for rf.logs[reply.FirstTermIndex].LogTerm == rf.logs[reply.FirstTermIndex - 1].LogTerm {
             if reply.FirstTermIndex > rf.commitIndex {
@@ -709,8 +711,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
                                                 Entries      : nil,
                                                 LeaderCommit : rf.commitIndex}
+                                            rf.mu.Unlock()
                                             detectReply := new(AppendEntriesReply)
                                             ok1 := rf.sendAppendEntries(server, detectAppendEntriesArgs, detectReply)
+                                            rf.mu.Lock()
                                             if !ok1 {
                                                 DPrintf("[server: %v]not receive from %v\n", rf.me, server)
                                                 rf.nextIndex[server] = len(rf.logs)
@@ -741,8 +745,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             Entries      : rf.logs[rf.nextIndex[server] : ],
                                             LeaderCommit : rf.commitIndex}
 
+                                        rf.mu.Unlock()
                                         forceReply := new(AppendEntriesReply)
                                         ok2 := rf.sendAppendEntries(server, forceAppendEntriesArgs, forceReply)
+                                        rf.mu.Lock()
                                         if ok2 {
                                             if args.Term != rf.currentTerm {
                                                 return
@@ -759,7 +765,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             }
                                         } else {
                                             rf.nextIndex[server]  = len(rf.logs)
-                                            rf.matchIndex[server] = len(rf.logs) - 1
                                         }
                                     } else {
                                         rf.state = "Follower"
@@ -806,9 +811,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             }
                         }
                     }
-                    // find the max one committed
+                    // find the max matchIndex committed
+                    // paper 5.4.2, only log entries from the leader's current term are committed by counting replicas
                     for index, matchNum := range matchIndexCntr {
-                        if matchNum > len(rf.peers) / 2 && index > rf.commitIndex {
+                        if matchNum > len(rf.peers) / 2 && index > rf.commitIndex && rf.logs[index].LogTerm == rf.currentTerm {
                             rf.commitIndex = index
                         }
                     }
