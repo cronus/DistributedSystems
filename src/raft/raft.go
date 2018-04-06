@@ -260,7 +260,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     // 2. votedFor is null or candidateId and
     //    candidate's log is at least as up-to-date as receiver's log, then grant vote
     //    If the logs have last entries with different terms, then the log with the later term is more up-to-date
-    //    If the logs end with the same term, then whichever lg is longer is more up-to-date
+    //    If the logs end with the same term, then whichever log is longer is more up-to-date
     if (rf.votedFor == NULL || rf.votedFor == args.CandidateId) &&
             ((args.LastLogTerm > rf.logs[len(rf.logs) - 1].LogTerm) || 
                 ((args.LastLogTerm == rf.logs[len(rf.logs) - 1].LogTerm) && 
@@ -458,40 +458,41 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
                 appendEntriesReply[server] = new(AppendEntriesReply)
 
-                go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
-                    for {
-                        trialReply := new(AppendEntriesReply)
-                        ok := rf.sendAppendEntries(server, args, trialReply)
-                        rf.mu.Lock()
-                        if rf.state != "Leader" {
-                            rf.mu.Unlock()
-                            return
-                        }
-                        if args.Term != rf.currentTerm {
-                            rf.mu.Unlock()
-                            return
-                        }
-                        if ok && trialReply.Success {
-                            reply.Term    = trialReply.Term
-                            reply.Success = trialReply.Success
-                            rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
-                            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
-                            rf.mu.Unlock()
-                            break
-                        }
-                        if ok && trialReply.Term > rf.currentTerm {
-                            rf.state = "Follower"
-                            rf.currentTerm = trialReply.Term
-                            rf.mu.Unlock()
-                            return
-                        }
-                        rf.mu.Unlock()
-                        time.Sleep(500 * time.Millisecond)
-                    }
-                    DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
-                    rf.cond.Broadcast()
-                    
-                }(rf, server, appendEntriesArgs[server], appendEntriesReply[server])
+                //go func(rf *Raft, server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
+                //    for {
+                //        DPrintf("[server: %v]qwe: %v\n", rf.me, args.Entries[0].Command)
+                //        trialReply := new(AppendEntriesReply)
+                //        ok := rf.sendAppendEntries(server, args, trialReply)
+                //        rf.mu.Lock()
+                //        if rf.state != "Leader" {
+                //            rf.mu.Unlock()
+                //            return
+                //        }
+                //        if args.Term != rf.currentTerm {
+                //            rf.mu.Unlock()
+                //            return
+                //        }
+                //        if ok && trialReply.Success {
+                //            reply.Term    = trialReply.Term
+                //            reply.Success = trialReply.Success
+                //            rf.matchIndex[server] = appendEntriesArgs[server].PrevLogIndex + len(appendEntriesArgs[server].Entries)
+                //            DPrintf("leader:%v, matchIndex:%v\n", rf.me, rf.matchIndex)
+                //            rf.mu.Unlock()
+                //            break
+                //        }
+                //        if ok && trialReply.Term > rf.currentTerm {
+                //            rf.state = "Follower"
+                //            rf.currentTerm = trialReply.Term
+                //            rf.mu.Unlock()
+                //            return
+                //        }
+                //        rf.mu.Unlock()
+                //        time.Sleep(500 * time.Millisecond)
+                //    }
+                //    DPrintf("[server: %v]AppendEntries reply of %v from follower %v, reply:%v\n", rf.me, args, server, reply);
+                //    rf.cond.Broadcast()
+                //    
+                //}(rf, server, appendEntriesArgs[server], appendEntriesReply[server])
             }
         }
 
@@ -550,9 +551,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.cond     = sync.NewCond(&rf.mu)
     rf.shutdown = make(chan struct{})
 
+    timeout := time.Duration(300 + rand.Int31n(400))
+    rf.t = time.NewTimer(timeout * time.Millisecond)
     go func(rf *Raft) {
-        timeout := time.Duration(300 + rand.Int31n(400))
-        rf.t = time.NewTimer(timeout * time.Millisecond)
         for {
             rf.mu.Lock()
             if rf.state == "Candidate" {
@@ -600,6 +601,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             requestVoteReply[server] = new(RequestVoteReply)
                             go func(server int, args *RequestVoteArgs, reply *RequestVoteReply, replyChan chan *RequestVoteReply) {
                                 ok := rf.sendRequestVote(server, args, reply)
+                                rf.mu.Lock()
+                                if rf.state != "Candidate" {
+                                    rf.mu.Unlock()
+                                    return
+                                }
+                                rf.mu.Unlock()
                                 if ok && reply.VoteGranted {
                                     replyChan <- reply
                                 } else {
@@ -681,7 +688,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 //    decrement nextIndex and retry
                                 rf.mu.Lock()
                                 // if get an old RPC reply
-                                if ok && args.Term != rf.currentTerm {
+                                if args.Term != rf.currentTerm {
                                     rf.mu.Unlock()
                                     return
                                 }
