@@ -751,6 +751,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         rf.mu.Lock()
                                         if ok2 {
                                             if args.Term != rf.currentTerm {
+                                                rf.mu.Unlock()
                                                 return
                                             }
                                             if forceReply.Term > rf.currentTerm {
@@ -759,9 +760,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 rf.mu.Unlock()
                                                 return
                                             } else {
-                                                rf.nextIndex[server]  = len(rf.logs)
-                                                rf.matchIndex[server] = len(rf.logs) - 1
+                                                rf.nextIndex[server]  = len(rf.logs) 
+                                                rf.matchIndex[server] = forceAppendEntriesArgs.PrevLogIndex + len(forceAppendEntriesArgs.Entries)
+                                                rf.mu.Unlock()
                                                 rf.cond.Broadcast()
+                                                return
                                             }
                                         } else {
                                             rf.nextIndex[server]  = len(rf.logs)
