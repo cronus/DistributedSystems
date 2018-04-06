@@ -1,0 +1,1711 @@
+2018/04/05 17:52:32 [server: 0]read persist data: [], len of data: 0
+2018/04/05 17:52:32 [server: 1]read persist data: [], len of data: 0
+2018/04/05 17:52:32 [server: 2]read persist data: [], len of data: 0
+2018/04/05 17:52:32 [server: 3]read persist data: [], len of data: 0
+2018/04/05 17:52:32 [server: 4]read persist data: [], len of data: 0
+Test (2C): Figure 8 (unreliable) ...
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1]change to candidate
+2018/04/05 17:52:32 [server: 1]state:Candidate
+2018/04/05 17:52:32 [server: 1] Candidate, election timeout 372ms, send RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [Enter RequestVote][server: 4]term :0 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [RequestVote][server: 4]term :1 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [Enter RequestVote][server: 2]term :0 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [RequestVote][server: 2]term :1 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [server: 1]Total granted peers: 3, total peers: 5
+2018/04/05 17:52:32 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:32 [server: 0]Term:0, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 0]received heartbeat
+2018/04/05 17:52:32 [Enter RequestVote][server: 3]term :0 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [RequestVote][server: 3]term :1 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [Enter RequestVote][server: 0]term :1 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [RequestVote][server: 0]term :1 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{1 1 0 0}
+2018/04/05 17:52:32 [server: 1]appendEntriesArgs entry: {1 9999}
+2018/04/05 17:52:32 leader:1, nextIndex:[2 1 1 1 1]
+2018/04/05 17:52:32 leader:1, nextIndex:[2 1 2 1 1]
+2018/04/05 17:52:32 leader:1, nextIndex:[2 1 2 2 1]
+2018/04/05 17:52:32 leader:1, nextIndex:[2 1 2 2 2]
+2018/04/05 17:52:32 [server: 1] return value: log index:1, term:1, isLeader:true
+2018/04/05 17:52:32 [server: 2]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 2]received heartbeat
+2018/04/05 17:52:32 [server: 4]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 4]received heartbeat
+2018/04/05 17:52:32 [server: 3]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 3]received heartbeat
+2018/04/05 17:52:32 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:32 [server: 3]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 1 1 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 abc:&{{1 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 1 1 [{0 <nil>} {1 9999}] 0 0 [2 1 2 1 2] [0 0 0 0 0] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 3 reply: &{1 1 false}
+2018/04/05 17:52:32 [server: 2]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 1 1 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 0]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 1 1 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 3]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 3]received heartbeat
+2018/04/05 17:52:32 [server: 1]Consistency check: nextIndex: [2 1 2 1 2]
+2018/04/05 17:52:32 [server: 3]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [{1 9999}] 0}, arg term: 1, arg log len:1
+2018/04/05 17:52:32 abc:&{{17 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 1 1 [{0 <nil>} {1 9999}] 0 0 [2 1 1 2 2] [0 0 0 1 0] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 2 reply: &{1 1 false}
+2018/04/05 17:52:32 [server: 2]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 2]received heartbeat
+2018/04/05 17:52:32 [server: 1]Consistency check: nextIndex: [2 1 1 2 2]
+2018/04/05 17:52:32 [server: 2]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [{1 9999}] 0}, arg term: 1, arg log len:1
+2018/04/05 17:52:32 abc:&{{17 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 1 1 [{0 <nil>} {1 9999}] 0 0 [1 1 2 2 2] [0 0 1 1 0] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 0 reply: &{1 1 false}
+2018/04/05 17:52:32 [server: 0]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 0}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 0]received heartbeat
+2018/04/05 17:52:32 [server: 1]not receive from 0
+2018/04/05 17:52:32 [server: 1]matchIndex: [0 1 1 1 0], cntr: map[0:5 1:3], rf.commitIndex: 1
+2018/04/05 17:52:32 [server: 1]lastApplied: 0, commitIndex: 1
+2018/04/05 17:52:32 [server: 1]send committed log to service: {true 9999 1}
+2018/04/05 17:52:32 [server: 1]Encode: rf currentTerm: 1, votedFor: 1, log:[{0 <nil>} {1 9999}], persist data: [3 4 0 2 3 4 0 2 3 4 0 2 5 4 0 254 78 30]
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1]appendEntriesArgs entry: {1 0}
+2018/04/05 17:52:32 leader:1, nextIndex:[3 1 2 2 2]
+2018/04/05 17:52:32 leader:1, nextIndex:[3 1 3 2 2]
+2018/04/05 17:52:32 leader:1, nextIndex:[3 1 3 3 2]
+2018/04/05 17:52:32 leader:1, nextIndex:[3 1 3 3 3]
+2018/04/05 17:52:32 [server: 1] return value: log index:2, term:1, isLeader:true
+aaa, 0, leader: 1
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1]appendEntriesArgs entry: {1 1}
+2018/04/05 17:52:32 leader:1, nextIndex:[4 1 3 3 3]
+2018/04/05 17:52:32 leader:1, nextIndex:[4 1 4 3 3]
+2018/04/05 17:52:32 leader:1, nextIndex:[4 1 4 4 3]
+2018/04/05 17:52:32 leader:1, nextIndex:[4 1 4 4 4]
+2018/04/05 17:52:32 [server: 1] return value: log index:3, term:1, isLeader:true
+aaa, 1, leader: 1
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1]appendEntriesArgs entry: {1 2}
+2018/04/05 17:52:32 leader:1, nextIndex:[5 1 4 4 4]
+2018/04/05 17:52:32 leader:1, nextIndex:[5 1 5 4 4]
+2018/04/05 17:52:32 leader:1, nextIndex:[5 1 5 5 4]
+2018/04/05 17:52:32 leader:1, nextIndex:[5 1 5 5 5]
+2018/04/05 17:52:32 [server: 1] return value: log index:4, term:1, isLeader:true
+aaa, 2, leader: 1
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:32 [server: 4]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 4 1 [] 1}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 abc:&{{1 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 1 1 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] 1 1 [5 1 5 5 1] [0 1 1 1 0] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 4 reply: &{1 1 false}
+2018/04/05 17:52:32 [server: 2]Term:1, server log:[{0 <nil>} {1 9999}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 4 1 [] 1}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3]Term:1, server log:[{0 <nil>} {1 9999}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 4 1 [] 1}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 0]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 4 1 [] 1}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 4]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [] 1}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 4]received heartbeat
+2018/04/05 17:52:32 [server: 1]Consistency check: nextIndex: [5 1 5 5 1]
+2018/04/05 17:52:32 [server: 4]Term:1, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 0 0 [{1 9999} {1 0} {1 1} {1 2}] 1}, arg term: 1, arg log len:4
+2018/04/05 17:52:32 abc:&{{25 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 1 1 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] 1 1 [5 1 2 5 5] [0 1 1 1 4] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 2 reply: &{1 2 false}
+2018/04/05 17:52:32 [server: 4]lastApplied: 0, commitIndex: 1
+2018/04/05 17:52:32 [server: 4]send committed log to service: {true 9999 1}
+2018/04/05 17:52:32 [server: 4]Encode: rf currentTerm: 1, votedFor: 1, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], persist data: [3 4 0 2 3 4 0 2 3 4 0 2 5 4 0 254 78 30]
+2018/04/05 17:52:32 [server: 2]Term:1, server log:[{0 <nil>} {1 9999}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 1 1 [] 1}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 2]received heartbeat
+2018/04/05 17:52:32 [server: 1]Consistency check: nextIndex: [5 1 2 5 5]
+2018/04/05 17:52:32 [server: 2]lastApplied: 0, commitIndex: 1
+2018/04/05 17:52:32 [server: 2]send committed log to service: {true 9999 1}
+2018/04/05 17:52:32 [server: 2]Encode: rf currentTerm: 1, votedFor: 1, log:[{0 <nil>} {1 9999}], persist data: [3 4 0 2 3 4 0 2 3 4 0 2 5 4 0 254 78 30]
+2018/04/05 17:52:32 [server: 2]Term:1, server log:[{0 <nil>} {1 9999}] lastApplied 1, commitIndex: 1, received AppendEntries, &{1 1 1 1 [{1 0} {1 1} {1 2}] 1}, arg term: 1, arg log len:3
+2018/04/05 17:52:32 [server: 1]appendEntriesArgs entry: {1 3}
+2018/04/05 17:52:32 leader:1, nextIndex:[6 1 5 5 5]
+2018/04/05 17:52:32 leader:1, nextIndex:[6 1 6 5 5]
+2018/04/05 17:52:32 leader:1, nextIndex:[6 1 6 6 5]
+2018/04/05 17:52:32 leader:1, nextIndex:[6 1 6 6 6]
+2018/04/05 17:52:32 [server: 1] return value: log index:5, term:1, isLeader:true
+aaa, 3, leader: 1
+2018/04/05 17:52:32 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 abc:&{{17 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 1 1 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3}] 1 1 [6 1 6 2 6] [0 1 4 1 4] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 3 reply: &{1 2 false}
+2018/04/05 17:52:32 [server: 3]Term:1, server log:[{0 <nil>} {1 9999}] lastApplied 0, commitIndex: 0, received AppendEntries, &{1 1 1 1 [] 1}, arg term: 1, arg log len:0
+2018/04/05 17:52:32 [server: 3]received heartbeat
+2018/04/05 17:52:32 [server: 3]lastApplied: 0, commitIndex: 1
+2018/04/05 17:52:32 [server: 3]send committed log to service: {true 9999 1}
+2018/04/05 17:52:32 [server: 3]Encode: rf currentTerm: 1, votedFor: 1, log:[{0 <nil>} {1 9999}], persist data: [3 4 0 2 3 4 0 2 3 4 0 2 5 4 0 254 78 30]
+2018/04/05 17:52:32 [server: 1]Consistency check: nextIndex: [6 1 6 2 6]
+
+disconnect 1
+2018/04/05 17:52:32 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:32 abc:&{{17 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 1 1 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3}] 1 1 [1 1 6 6 6] [0 1 4 5 4] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 0 reply: &{1 1 false}
+2018/04/05 17:52:33 [server: 4]change to candidate
+2018/04/05 17:52:33 [server: 4]state:Candidate
+2018/04/05 17:52:33 [server: 4] Candidate, election timeout 681ms, send RequestVote: &{2 4 4 1}
+2018/04/05 17:52:33 [Enter RequestVote][server: 3]term :1 voted for:1, logs: [{0 <nil>} {1 9999}], commitIndex: 1, received RequestVote: &{2 4 4 1}
+2018/04/05 17:52:33 [RequestVote][server: 3]term :2 voted for:-1, logs: [{0 <nil>} {1 9999}], commitIndex: 1, received RequestVote: &{2 4 4 1}
+2018/04/05 17:52:33 [Enter RequestVote][server: 2]term :1 voted for:1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 1, received RequestVote: &{2 4 4 1}
+2018/04/05 17:52:33 [RequestVote][server: 2]term :2 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 1, received RequestVote: &{2 4 4 1}
+2018/04/05 17:52:33 [server: 4]Total granted peers: 3, total peers: 5
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [Enter RequestVote][server: 0]term :1 voted for:1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{2 4 4 1}
+2018/04/05 17:52:33 [RequestVote][server: 0]term :2 voted for:-1, logs: [{0 <nil>}], commitIndex: 0, received RequestVote: &{2 4 4 1}
+2018/04/05 17:52:33 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 1, commitIndex: 1, received AppendEntries, &{2 4 4 1 [] 1}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 2]received heartbeat
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{2 4 4 1 [] 1}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 abc:&{{1 0} [0xc42000aee0 0xc42000af00 0xc42000af20 0xc42000af40 0xc42000af60] 0xc42004df80 4 2 4 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] 1 1 [1 5 5 5 5] [0 0 0 0 0] Leader 0xc420104000 0xc42004dfc0 0xc42005a6c0}, server: 0 reply: &{2 1 false}
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999}] lastApplied 1, commitIndex: 1, received AppendEntries, &{2 4 4 1 [] 1}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{2 4 0 0 [] 1}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]received heartbeat
+2018/04/05 17:52:33 [server: 4]Consistency check: nextIndex: [1 5 5 5 5]
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>}] lastApplied 0, commitIndex: 0, received AppendEntries, &{2 4 0 0 [{1 9999} {1 0} {1 1} {1 2}] 1}, arg term: 2, arg log len:4
+2018/04/05 17:52:33 abc:&{{1 0} [0xc42000aee0 0xc42000af00 0xc42000af20 0xc42000af40 0xc42000af60] 0xc42004df80 4 2 4 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] 1 1 [5 5 5 2 5] [4 0 0 0 0] Leader 0xc420104000 0xc42004dfc0 0xc42005a6c0}, server: 3 reply: &{2 2 false}
+2018/04/05 17:52:33 [server: 0]lastApplied: 0, commitIndex: 1
+2018/04/05 17:52:33 [server: 0]send committed log to service: {true 9999 1}
+2018/04/05 17:52:33 [server: 0]Encode: rf currentTerm: 2, votedFor: 4, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], persist data: [3 4 0 4 3 4 0 8 3 4 0 2 5 4 0 254 78 30]
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999}] lastApplied 1, commitIndex: 1, received AppendEntries, &{2 4 1 1 [] 1}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 4]Consistency check: nextIndex: [5 5 5 2 5]
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999}] lastApplied 1, commitIndex: 1, received AppendEntries, &{2 4 1 1 [{1 0} {1 1} {1 2}] 1}, arg term: 2, arg log len:3
+2018/04/05 17:52:33 [server: 4]matchIndex: [4 0 0 4 4], cntr: map[4:3 0:5], rf.commitIndex: 4
+2018/04/05 17:52:33 [server: 4]lastApplied: 1, commitIndex: 4
+2018/04/05 17:52:33 [server: 4]send committed log to service: {true 0 2}
+2018/04/05 17:52:33 [server: 4]send committed log to service: {true 1 3}
+2018/04/05 17:52:33 [server: 4]send committed log to service: {true 2 4}
+2018/04/05 17:52:33 [server: 4]Encode: rf currentTerm: 2, votedFor: 4, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], persist data: [3 4 0 4 3 4 0 8 3 4 0 2 5 4 0 254 78 30 3 4 0 2 3 4 0 0 3 4 0 2 3 4 0 2 3 4 0 2 3 4 0 4]
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 1, commitIndex: 1, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]received heartbeat
+2018/04/05 17:52:33 [server: 0]lastApplied: 1, commitIndex: 4
+2018/04/05 17:52:33 [server: 0]send committed log to service: {true 0 2}
+2018/04/05 17:52:33 [server: 0]send committed log to service: {true 1 3}
+2018/04/05 17:52:33 [server: 0]send committed log to service: {true 2 4}
+2018/04/05 17:52:33 [server: 0]Encode: rf currentTerm: 2, votedFor: 4, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], persist data: [3 4 0 4 3 4 0 8 3 4 0 2 5 4 0 254 78 30 3 4 0 2 3 4 0 0 3 4 0 2 3 4 0 2 3 4 0 2 3 4 0 4]
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 1, commitIndex: 1, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 3]lastApplied: 1, commitIndex: 4
+2018/04/05 17:52:33 [server: 3]send committed log to service: {true 0 2}
+2018/04/05 17:52:33 [server: 3]send committed log to service: {true 1 3}
+2018/04/05 17:52:33 [server: 3]send committed log to service: {true 2 4}
+2018/04/05 17:52:33 [server: 3]Encode: rf currentTerm: 2, votedFor: 4, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], persist data: [3 4 0 4 3 4 0 8 3 4 0 2 5 4 0 254 78 30 3 4 0 2 3 4 0 0 3 4 0 2 3 4 0 2 3 4 0 2 3 4 0 4]
+2018/04/05 17:52:33 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 1, commitIndex: 1, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 2]received heartbeat
+2018/04/05 17:52:33 [server: 2]lastApplied: 1, commitIndex: 4
+2018/04/05 17:52:33 [server: 2]send committed log to service: {true 0 2}
+2018/04/05 17:52:33 [server: 2]send committed log to service: {true 1 3}
+2018/04/05 17:52:33 [server: 2]send committed log to service: {true 2 4}
+2018/04/05 17:52:33 [server: 2]Encode: rf currentTerm: 2, votedFor: 4, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], persist data: [3 4 0 4 3 4 0 8 3 4 0 2 5 4 0 254 78 30 3 4 0 2 3 4 0 0 3 4 0 2 3 4 0 2 3 4 0 2 3 4 0 4]
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 2]received heartbeat
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]received heartbeat
+2018/04/05 17:52:33 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 2]received heartbeat
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 2]received heartbeat
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]received heartbeat
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 2]received heartbeat
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]received heartbeat
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]received heartbeat
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 2]received heartbeat
+2018/04/05 17:52:33 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:33 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 3]received heartbeat
+2018/04/05 17:52:33 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:33 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 2]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 2]received heartbeat
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 2]received heartbeat
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 2]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 2]received heartbeat
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 2]received heartbeat
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:34 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 3]received heartbeat
+2018/04/05 17:52:34 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 0]received heartbeat
+2018/04/05 17:52:34 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:34 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 3]received heartbeat
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:35 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:35 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 2]received heartbeat
+2018/04/05 17:52:35 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:35 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 2]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 2]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 2]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 2]received heartbeat
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 2]received heartbeat
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 2]received heartbeat
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:36 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:36 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 2]received heartbeat
+2018/04/05 17:52:36 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 3]received heartbeat
+2018/04/05 17:52:36 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:36 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 3]received heartbeat
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 3]received heartbeat
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 3]received heartbeat
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 3]received heartbeat
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 3]received heartbeat
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 3]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 2]received heartbeat
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]received heartbeat
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 4 1 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 3]received heartbeat
+2018/04/05 17:52:37 [server: 1]not receive from 0
+2018/04/05 17:52:37 [server: 1]matchIndex: [0 5 4 5 4], cntr: map[0:5 5:2 4:4], rf.commitIndex: 4
+2018/04/05 17:52:37 [server: 1]lastApplied: 1, commitIndex: 4
+2018/04/05 17:52:37 [server: 1]send committed log to service: {true 0 2}
+2018/04/05 17:52:37 [server: 1]send committed log to service: {true 1 3}
+2018/04/05 17:52:37 [server: 1]send committed log to service: {true 2 4}
+2018/04/05 17:52:37 [server: 1]Encode: rf currentTerm: 1, votedFor: 1, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3}], persist data: [3 4 0 2 3 4 0 2 3 4 0 2 5 4 0 254 78 30 3 4 0 2 3 4 0 0 3 4 0 2 3 4 0 2 3 4 0 2 3 4 0 4]
+2018/04/05 17:52:37 [server: 1]appendEntriesArgs entry: {1 4}
+2018/04/05 17:52:37 leader:1, nextIndex:[7 1 6 6 6]
+2018/04/05 17:52:37 leader:1, nextIndex:[7 1 7 6 6]
+2018/04/05 17:52:37 leader:1, nextIndex:[7 1 7 7 6]
+2018/04/05 17:52:37 leader:1, nextIndex:[7 1 7 7 7]
+2018/04/05 17:52:37 [server: 1] return value: log index:6, term:1, isLeader:true
+2018/04/05 17:52:37 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 4]appendEntriesArgs entry: {2 4}
+2018/04/05 17:52:37 leader:4, nextIndex:[6 5 5 5 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[6 6 5 5 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[6 6 6 5 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[6 6 6 6 5]
+2018/04/05 17:52:37 [server: 4] return value: log index:5, term:2, isLeader:true
+aaa, 4, leader: 4
+2018/04/05 17:52:37 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:37 [server: 1]appendEntriesArgs entry: {1 5}
+2018/04/05 17:52:37 leader:1, nextIndex:[8 1 7 7 7]
+2018/04/05 17:52:37 leader:1, nextIndex:[8 1 8 7 7]
+2018/04/05 17:52:37 leader:1, nextIndex:[8 1 8 8 7]
+2018/04/05 17:52:37 leader:1, nextIndex:[8 1 8 8 8]
+2018/04/05 17:52:37 [server: 1] return value: log index:7, term:1, isLeader:true
+2018/04/05 17:52:37 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 4]appendEntriesArgs entry: {2 5}
+2018/04/05 17:52:37 leader:4, nextIndex:[7 6 6 6 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[7 7 6 6 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[7 7 7 6 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[7 7 7 7 5]
+2018/04/05 17:52:37 [server: 4] return value: log index:6, term:2, isLeader:true
+aaa, 5, leader: 4
+2018/04/05 17:52:37 [server: 4]Leader, send heartbeat, period: 100ms
+
+disconnect 4
+2018/04/05 17:52:37 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 1]appendEntriesArgs entry: {1 6}
+2018/04/05 17:52:37 leader:1, nextIndex:[9 1 8 8 8]
+2018/04/05 17:52:37 leader:1, nextIndex:[9 1 9 8 8]
+2018/04/05 17:52:37 leader:1, nextIndex:[9 1 9 9 8]
+2018/04/05 17:52:37 leader:1, nextIndex:[9 1 9 9 9]
+2018/04/05 17:52:37 [server: 1] return value: log index:8, term:1, isLeader:true
+2018/04/05 17:52:37 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 4]appendEntriesArgs entry: {2 6}
+2018/04/05 17:52:37 leader:4, nextIndex:[8 7 7 7 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[8 8 7 7 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[8 8 8 7 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[8 8 8 8 5]
+2018/04/05 17:52:37 [server: 4] return value: log index:7, term:2, isLeader:true
+2018/04/05 17:52:37 [server: 3]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 6 2 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 1]appendEntriesArgs entry: {1 7}
+2018/04/05 17:52:37 leader:1, nextIndex:[10 1 9 9 9]
+2018/04/05 17:52:37 leader:1, nextIndex:[10 1 10 9 9]
+2018/04/05 17:52:37 leader:1, nextIndex:[10 1 10 10 9]
+2018/04/05 17:52:37 leader:1, nextIndex:[10 1 10 10 10]
+2018/04/05 17:52:37 [server: 1] return value: log index:9, term:1, isLeader:true
+2018/04/05 17:52:37 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 4]appendEntriesArgs entry: {2 7}
+2018/04/05 17:52:37 leader:4, nextIndex:[9 8 8 8 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[9 9 8 8 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[9 9 9 8 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[9 9 9 9 5]
+2018/04/05 17:52:37 [server: 4] return value: log index:8, term:2, isLeader:true
+2018/04/05 17:52:37 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 1]appendEntriesArgs entry: {1 8}
+2018/04/05 17:52:37 leader:1, nextIndex:[11 1 10 10 10]
+2018/04/05 17:52:37 leader:1, nextIndex:[11 1 11 10 10]
+2018/04/05 17:52:37 leader:1, nextIndex:[11 1 11 11 10]
+2018/04/05 17:52:37 leader:1, nextIndex:[11 1 11 11 11]
+2018/04/05 17:52:37 [server: 1] return value: log index:10, term:1, isLeader:true
+2018/04/05 17:52:37 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:37 [server: 4]appendEntriesArgs entry: {2 8}
+2018/04/05 17:52:37 leader:4, nextIndex:[10 9 9 9 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[10 10 9 9 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[10 10 10 9 5]
+2018/04/05 17:52:37 leader:4, nextIndex:[10 10 10 10 5]
+2018/04/05 17:52:37 [server: 4] return value: log index:9, term:2, isLeader:true
+2018/04/05 17:52:37 [server: 2]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 6 2 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:37 [server: 0]Term:2, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 6 2 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 9}
+2018/04/05 17:52:38 leader:1, nextIndex:[12 1 11 11 11]
+2018/04/05 17:52:38 leader:1, nextIndex:[12 1 12 11 11]
+2018/04/05 17:52:38 leader:1, nextIndex:[12 1 12 12 11]
+2018/04/05 17:52:38 leader:1, nextIndex:[12 1 12 12 12]
+2018/04/05 17:52:38 [server: 1] return value: log index:11, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 9}
+2018/04/05 17:52:38 leader:4, nextIndex:[11 10 10 10 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[11 11 10 10 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[11 11 11 10 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[11 11 11 11 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:10, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 10}
+2018/04/05 17:52:38 leader:1, nextIndex:[13 1 12 12 12]
+2018/04/05 17:52:38 leader:1, nextIndex:[13 1 13 12 12]
+2018/04/05 17:52:38 leader:1, nextIndex:[13 1 13 13 12]
+2018/04/05 17:52:38 leader:1, nextIndex:[13 1 13 13 13]
+2018/04/05 17:52:38 [server: 1] return value: log index:12, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 10}
+2018/04/05 17:52:38 leader:4, nextIndex:[12 11 11 11 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[12 12 11 11 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[12 12 12 11 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[12 12 12 12 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:11, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 11}
+2018/04/05 17:52:38 leader:1, nextIndex:[14 1 13 13 13]
+2018/04/05 17:52:38 leader:1, nextIndex:[14 1 14 13 13]
+2018/04/05 17:52:38 leader:1, nextIndex:[14 1 14 14 13]
+2018/04/05 17:52:38 leader:1, nextIndex:[14 1 14 14 14]
+2018/04/05 17:52:38 [server: 1] return value: log index:13, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 11}
+2018/04/05 17:52:38 leader:4, nextIndex:[13 12 12 12 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[13 13 12 12 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[13 13 13 12 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[13 13 13 13 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:12, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 12}
+2018/04/05 17:52:38 leader:1, nextIndex:[15 1 14 14 14]
+2018/04/05 17:52:38 leader:1, nextIndex:[15 1 15 14 14]
+2018/04/05 17:52:38 leader:1, nextIndex:[15 1 15 15 14]
+2018/04/05 17:52:38 leader:1, nextIndex:[15 1 15 15 15]
+2018/04/05 17:52:38 [server: 1] return value: log index:14, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 12}
+2018/04/05 17:52:38 leader:4, nextIndex:[14 13 13 13 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[14 14 13 13 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[14 14 14 13 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[14 14 14 14 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:13, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 3]change to candidate
+2018/04/05 17:52:38 [server: 3]state:Candidate
+2018/04/05 17:52:38 [server: 3] Candidate, election timeout 571ms, send RequestVote: &{3 3 4 1}
+2018/04/05 17:52:38 [Enter RequestVote][server: 2]term :2 voted for:4, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{3 3 4 1}
+2018/04/05 17:52:38 [RequestVote][server: 2]term :3 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{3 3 4 1}
+2018/04/05 17:52:38 [Enter RequestVote][server: 0]term :2 voted for:4, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{3 3 4 1}
+2018/04/05 17:52:38 [RequestVote][server: 0]term :3 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{3 3 4 1}
+2018/04/05 17:52:38 [server: 3]Total granted peers: 3, total peers: 5
+2018/04/05 17:52:38 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 0]Term:3, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{3 3 4 1 [] 4}, arg term: 3, arg log len:0
+2018/04/05 17:52:38 [server: 0]received heartbeat
+2018/04/05 17:52:38 [server: 2]Term:3, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{3 3 4 1 [] 4}, arg term: 3, arg log len:0
+2018/04/05 17:52:38 [server: 2]received heartbeat
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 13}
+2018/04/05 17:52:38 leader:1, nextIndex:[16 1 15 15 15]
+2018/04/05 17:52:38 leader:1, nextIndex:[16 1 16 15 15]
+2018/04/05 17:52:38 leader:1, nextIndex:[16 1 16 16 15]
+2018/04/05 17:52:38 leader:1, nextIndex:[16 1 16 16 16]
+2018/04/05 17:52:38 [server: 1] return value: log index:15, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 13}
+2018/04/05 17:52:38 leader:3, nextIndex:[6 5 5 5 5]
+2018/04/05 17:52:38 leader:3, nextIndex:[6 6 5 5 5]
+2018/04/05 17:52:38 leader:3, nextIndex:[6 6 6 5 5]
+2018/04/05 17:52:38 leader:3, nextIndex:[6 6 6 5 6]
+2018/04/05 17:52:38 [server: 3] return value: log index:5, term:3, isLeader:true
+aaa, 13, leader: 3
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 13}
+2018/04/05 17:52:38 leader:4, nextIndex:[15 14 14 14 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[15 15 14 14 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[15 15 15 14 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[15 15 15 15 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:14, term:2, isLeader:true
+
+disconnect 3
+
+connect 3
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 14}
+2018/04/05 17:52:38 leader:1, nextIndex:[17 1 16 16 16]
+2018/04/05 17:52:38 leader:1, nextIndex:[17 1 17 16 16]
+2018/04/05 17:52:38 leader:1, nextIndex:[17 1 17 17 16]
+2018/04/05 17:52:38 leader:1, nextIndex:[17 1 17 17 17]
+2018/04/05 17:52:38 [server: 1] return value: log index:16, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 14}
+2018/04/05 17:52:38 leader:3, nextIndex:[7 6 6 5 6]
+2018/04/05 17:52:38 leader:3, nextIndex:[7 7 6 5 6]
+2018/04/05 17:52:38 leader:3, nextIndex:[7 7 7 5 6]
+2018/04/05 17:52:38 leader:3, nextIndex:[7 7 7 5 7]
+2018/04/05 17:52:38 [server: 3] return value: log index:6, term:3, isLeader:true
+aaa, 14, leader: 3
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 14}
+2018/04/05 17:52:38 leader:4, nextIndex:[16 15 15 15 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[16 16 15 15 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[16 16 16 15 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[16 16 16 16 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:15, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 15}
+2018/04/05 17:52:38 leader:1, nextIndex:[18 1 17 17 17]
+2018/04/05 17:52:38 leader:1, nextIndex:[18 1 18 17 17]
+2018/04/05 17:52:38 leader:1, nextIndex:[18 1 18 18 17]
+2018/04/05 17:52:38 leader:1, nextIndex:[18 1 18 18 18]
+2018/04/05 17:52:38 [server: 1] return value: log index:17, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 15}
+2018/04/05 17:52:38 leader:3, nextIndex:[8 7 7 5 7]
+2018/04/05 17:52:38 leader:3, nextIndex:[8 8 7 5 7]
+2018/04/05 17:52:38 leader:3, nextIndex:[8 8 8 5 7]
+2018/04/05 17:52:38 leader:3, nextIndex:[8 8 8 5 8]
+2018/04/05 17:52:38 [server: 3] return value: log index:7, term:3, isLeader:true
+aaa, 15, leader: 3
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 15}
+2018/04/05 17:52:38 leader:4, nextIndex:[17 16 16 16 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[17 17 16 16 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[17 17 17 16 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[17 17 17 17 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:16, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 16}
+2018/04/05 17:52:38 leader:1, nextIndex:[19 1 18 18 18]
+2018/04/05 17:52:38 leader:1, nextIndex:[19 1 19 18 18]
+2018/04/05 17:52:38 leader:1, nextIndex:[19 1 19 19 18]
+2018/04/05 17:52:38 leader:1, nextIndex:[19 1 19 19 19]
+2018/04/05 17:52:38 [server: 1] return value: log index:18, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 16}
+2018/04/05 17:52:38 leader:3, nextIndex:[9 8 8 5 8]
+2018/04/05 17:52:38 leader:3, nextIndex:[9 9 8 5 8]
+2018/04/05 17:52:38 leader:3, nextIndex:[9 9 9 5 8]
+2018/04/05 17:52:38 leader:3, nextIndex:[9 9 9 5 9]
+2018/04/05 17:52:38 [server: 3] return value: log index:8, term:3, isLeader:true
+aaa, 16, leader: 3
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 16}
+2018/04/05 17:52:38 leader:4, nextIndex:[18 17 17 17 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[18 18 17 17 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[18 18 18 17 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[18 18 18 18 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:17, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 17}
+2018/04/05 17:52:38 leader:1, nextIndex:[20 1 19 19 19]
+2018/04/05 17:52:38 leader:1, nextIndex:[20 1 20 19 19]
+2018/04/05 17:52:38 leader:1, nextIndex:[20 1 20 20 19]
+2018/04/05 17:52:38 leader:1, nextIndex:[20 1 20 20 20]
+2018/04/05 17:52:38 [server: 1] return value: log index:19, term:1, isLeader:true
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 17}
+2018/04/05 17:52:38 leader:3, nextIndex:[10 9 9 5 9]
+2018/04/05 17:52:38 leader:3, nextIndex:[10 10 9 5 9]
+2018/04/05 17:52:38 leader:3, nextIndex:[10 10 10 5 9]
+2018/04/05 17:52:38 leader:3, nextIndex:[10 10 10 5 10]
+2018/04/05 17:52:38 [server: 3] return value: log index:9, term:3, isLeader:true
+aaa, 17, leader: 3
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 17}
+2018/04/05 17:52:38 leader:4, nextIndex:[19 18 18 18 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[19 19 18 18 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[19 19 19 18 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[19 19 19 19 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:18, term:2, isLeader:true
+
+disconnect 3
+
+connect 1
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1]appendEntriesArgs entry: {1 18}
+2018/04/05 17:52:38 leader:1, nextIndex:[21 1 20 20 20]
+2018/04/05 17:52:38 leader:1, nextIndex:[21 1 21 20 20]
+2018/04/05 17:52:38 leader:1, nextIndex:[21 1 21 21 20]
+2018/04/05 17:52:38 leader:1, nextIndex:[21 1 21 21 21]
+2018/04/05 17:52:38 [server: 1] return value: log index:20, term:1, isLeader:true
+aaa, 18, leader: 1
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 18}
+2018/04/05 17:52:38 leader:3, nextIndex:[11 10 10 5 10]
+2018/04/05 17:52:38 leader:3, nextIndex:[11 11 10 5 10]
+2018/04/05 17:52:38 leader:3, nextIndex:[11 11 11 5 10]
+2018/04/05 17:52:38 leader:3, nextIndex:[11 11 11 5 11]
+2018/04/05 17:52:38 [server: 3] return value: log index:10, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 18}
+2018/04/05 17:52:38 leader:4, nextIndex:[20 19 19 19 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[20 20 19 19 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[20 20 20 19 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[20 20 20 20 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:19, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 2]Term:3, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{1 1 20 1 [] 4}, arg term: 1, arg log len:0
+2018/04/05 17:52:38 [server: 0]Term:3, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{1 1 20 1 [] 4}, arg term: 1, arg log len:0
+2018/04/05 17:52:38 [server: 1]dddd
+2018/04/05 17:52:38 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 19}
+2018/04/05 17:52:38 leader:3, nextIndex:[12 11 11 5 11]
+2018/04/05 17:52:38 leader:3, nextIndex:[12 12 11 5 11]
+2018/04/05 17:52:38 leader:3, nextIndex:[12 12 12 5 11]
+2018/04/05 17:52:38 leader:3, nextIndex:[12 12 12 5 12]
+2018/04/05 17:52:38 [server: 3] return value: log index:11, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 19}
+2018/04/05 17:52:38 leader:4, nextIndex:[21 20 20 20 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[21 21 20 20 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[21 21 21 20 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[21 21 21 21 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:20, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 20}
+2018/04/05 17:52:38 leader:3, nextIndex:[13 12 12 5 12]
+2018/04/05 17:52:38 leader:3, nextIndex:[13 13 12 5 12]
+2018/04/05 17:52:38 leader:3, nextIndex:[13 13 13 5 12]
+2018/04/05 17:52:38 leader:3, nextIndex:[13 13 13 5 13]
+2018/04/05 17:52:38 [server: 3] return value: log index:12, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 20}
+2018/04/05 17:52:38 leader:4, nextIndex:[22 21 21 21 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[22 22 21 21 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[22 22 22 21 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[22 22 22 22 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:21, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 21}
+2018/04/05 17:52:38 leader:3, nextIndex:[14 13 13 5 13]
+2018/04/05 17:52:38 leader:3, nextIndex:[14 14 13 5 13]
+2018/04/05 17:52:38 leader:3, nextIndex:[14 14 14 5 13]
+2018/04/05 17:52:38 leader:3, nextIndex:[14 14 14 5 14]
+2018/04/05 17:52:38 [server: 3] return value: log index:13, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 21}
+2018/04/05 17:52:38 leader:4, nextIndex:[23 22 22 22 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[23 23 22 22 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[23 23 23 22 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[23 23 23 23 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:22, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 22}
+2018/04/05 17:52:38 leader:3, nextIndex:[15 14 14 5 14]
+2018/04/05 17:52:38 leader:3, nextIndex:[15 15 14 5 14]
+2018/04/05 17:52:38 leader:3, nextIndex:[15 15 15 5 14]
+2018/04/05 17:52:38 leader:3, nextIndex:[15 15 15 5 15]
+2018/04/05 17:52:38 [server: 3] return value: log index:14, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 22}
+2018/04/05 17:52:38 leader:4, nextIndex:[24 23 23 23 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[24 24 23 23 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[24 24 24 23 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[24 24 24 24 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:23, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 23}
+2018/04/05 17:52:38 leader:3, nextIndex:[16 15 15 5 15]
+2018/04/05 17:52:38 leader:3, nextIndex:[16 16 15 5 15]
+2018/04/05 17:52:38 leader:3, nextIndex:[16 16 16 5 15]
+2018/04/05 17:52:38 leader:3, nextIndex:[16 16 16 5 16]
+2018/04/05 17:52:38 [server: 3] return value: log index:15, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 23}
+2018/04/05 17:52:38 leader:4, nextIndex:[25 24 24 24 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[25 25 24 24 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[25 25 25 24 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[25 25 25 25 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:24, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 24}
+2018/04/05 17:52:38 leader:3, nextIndex:[17 16 16 5 16]
+2018/04/05 17:52:38 leader:3, nextIndex:[17 17 16 5 16]
+2018/04/05 17:52:38 leader:3, nextIndex:[17 17 17 5 16]
+2018/04/05 17:52:38 leader:3, nextIndex:[17 17 17 5 17]
+2018/04/05 17:52:38 [server: 3] return value: log index:16, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 24}
+2018/04/05 17:52:38 leader:4, nextIndex:[26 25 25 25 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[26 26 25 25 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[26 26 26 25 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[26 26 26 26 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:25, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 25}
+2018/04/05 17:52:38 leader:3, nextIndex:[18 17 17 5 17]
+2018/04/05 17:52:38 leader:3, nextIndex:[18 18 17 5 17]
+2018/04/05 17:52:38 leader:3, nextIndex:[18 18 18 5 17]
+2018/04/05 17:52:38 leader:3, nextIndex:[18 18 18 5 18]
+2018/04/05 17:52:38 [server: 3] return value: log index:17, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 25}
+2018/04/05 17:52:38 leader:4, nextIndex:[27 26 26 26 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[27 27 26 26 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[27 27 27 26 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[27 27 27 27 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:26, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 26}
+2018/04/05 17:52:38 leader:3, nextIndex:[19 18 18 5 18]
+2018/04/05 17:52:38 leader:3, nextIndex:[19 19 18 5 18]
+2018/04/05 17:52:38 leader:3, nextIndex:[19 19 19 5 18]
+2018/04/05 17:52:38 leader:3, nextIndex:[19 19 19 5 19]
+2018/04/05 17:52:38 [server: 3] return value: log index:18, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 26}
+2018/04/05 17:52:38 leader:4, nextIndex:[28 27 27 27 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[28 28 27 27 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[28 28 28 27 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[28 28 28 28 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:27, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 1]change to candidate
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 1]state:Candidate
+2018/04/05 17:52:38 [server: 1] Candidate, election timeout 372ms, send RequestVote: &{4 1 20 1}
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 27}
+2018/04/05 17:52:38 leader:3, nextIndex:[20 19 19 5 19]
+2018/04/05 17:52:38 leader:3, nextIndex:[20 20 19 5 19]
+2018/04/05 17:52:38 leader:3, nextIndex:[20 20 20 5 19]
+2018/04/05 17:52:38 leader:3, nextIndex:[20 20 20 5 20]
+2018/04/05 17:52:38 [server: 3] return value: log index:19, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 27}
+2018/04/05 17:52:38 leader:4, nextIndex:[29 28 28 28 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[29 29 28 28 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[29 29 29 28 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[29 29 29 29 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:28, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 28}
+2018/04/05 17:52:38 leader:3, nextIndex:[21 20 20 5 20]
+2018/04/05 17:52:38 leader:3, nextIndex:[21 21 20 5 20]
+2018/04/05 17:52:38 leader:3, nextIndex:[21 21 21 5 20]
+2018/04/05 17:52:38 leader:3, nextIndex:[21 21 21 5 21]
+2018/04/05 17:52:38 [server: 3] return value: log index:20, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 28}
+2018/04/05 17:52:38 leader:4, nextIndex:[30 29 29 29 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[30 30 29 29 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[30 30 30 29 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[30 30 30 30 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:29, term:2, isLeader:true
+2018/04/05 17:52:38 [Enter RequestVote][server: 0]term :3 voted for:3, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{4 1 20 1}
+2018/04/05 17:52:38 [RequestVote][server: 0]term :4 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{4 1 20 1}
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 29}
+2018/04/05 17:52:38 leader:3, nextIndex:[22 21 21 5 21]
+2018/04/05 17:52:38 leader:3, nextIndex:[22 22 21 5 21]
+2018/04/05 17:52:38 leader:3, nextIndex:[22 22 22 5 21]
+2018/04/05 17:52:38 leader:3, nextIndex:[22 22 22 5 22]
+2018/04/05 17:52:38 [server: 3] return value: log index:21, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 29}
+2018/04/05 17:52:38 leader:4, nextIndex:[31 30 30 30 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[31 31 30 30 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[31 31 31 30 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[31 31 31 31 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:30, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 1] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:38 [server: 3]appendEntriesArgs entry: {3 30}
+2018/04/05 17:52:38 leader:3, nextIndex:[23 22 22 5 22]
+2018/04/05 17:52:38 leader:3, nextIndex:[23 23 22 5 22]
+2018/04/05 17:52:38 leader:3, nextIndex:[23 23 23 5 22]
+2018/04/05 17:52:38 leader:3, nextIndex:[23 23 23 5 23]
+2018/04/05 17:52:38 [server: 3] return value: log index:22, term:3, isLeader:true
+2018/04/05 17:52:38 [server: 4]appendEntriesArgs entry: {2 30}
+2018/04/05 17:52:38 leader:4, nextIndex:[32 31 31 31 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[32 32 31 31 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[32 32 32 31 5]
+2018/04/05 17:52:38 leader:4, nextIndex:[32 32 32 32 5]
+2018/04/05 17:52:38 [server: 4] return value: log index:31, term:2, isLeader:true
+2018/04/05 17:52:38 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 2]change to candidate
+2018/04/05 17:52:38 [server: 2]state:Candidate
+2018/04/05 17:52:38 [server: 2] Candidate, election timeout 455ms, send RequestVote: &{4 2 4 1}
+2018/04/05 17:52:38 [Enter RequestVote][server: 1]term :3 voted for:1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}], commitIndex: 4, received RequestVote: &{4 2 4 1}
+2018/04/05 17:52:38 [server: 1]Total granted peers: 2, total peers: 5
+2018/04/05 17:52:38 [Enter RequestVote][server: 0]term :4 voted for:1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{4 2 4 1}
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 1]change to candidate
+2018/04/05 17:52:38 [server: 1]state:Candidate
+2018/04/05 17:52:38 [server: 1] Candidate, election timeout 372ms, send RequestVote: &{5 1 20 1}
+2018/04/05 17:52:38 [Enter RequestVote][server: 0]term :4 voted for:1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{5 1 20 1}
+2018/04/05 17:52:38 [RequestVote][server: 0]term :5 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{5 1 20 1}
+2018/04/05 17:52:38 [Enter RequestVote][server: 2]term :3 voted for:2, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{5 1 20 1}
+2018/04/05 17:52:38 [RequestVote][server: 2]term :5 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{5 1 20 1}
+2018/04/05 17:52:38 [server: 2]Total granted peers: 1, total peers: 5
+2018/04/05 17:52:38 [server: 1]Total granted peers: 3, total peers: 5
+2018/04/05 17:52:38 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 2]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{5 1 20 1 [] 4}, arg term: 5, arg log len:0
+2018/04/05 17:52:38 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:38 [server: 0]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{5 1 20 1 [] 4}, arg term: 5, arg log len:0
+2018/04/05 17:52:38 abc:&{{1 0} [0xc42000ab00 0xc42000ab20 0xc42000ab40 0xc42000ab60 0xc42000ab80] 0xc42004dc40 1 5 1 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}] 4 4 [5 21 21 21 21] [0 0 0 0 0] Leader 0xc42004dcc0 0xc42004dc80 0xc42005a480}, server: 0 reply: &{5 5 false}
+2018/04/05 17:52:39 [server: 0]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{5 1 4 1 [] 4}, arg term: 5, arg log len:0
+2018/04/05 17:52:39 [server: 0]received heartbeat
+2018/04/05 17:52:39 [server: 1]Consistency check: nextIndex: [5 21 21 21 21]
+2018/04/05 17:52:39 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 0]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{5 1 4 1 [{1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}] 4}, arg term: 5, arg log len:16
+2018/04/05 17:52:39 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 31}
+2018/04/05 17:52:39 leader:1, nextIndex:[22 21 21 21 21]
+2018/04/05 17:52:39 leader:1, nextIndex:[22 21 22 21 21]
+2018/04/05 17:52:39 leader:1, nextIndex:[22 21 22 22 21]
+2018/04/05 17:52:39 leader:1, nextIndex:[22 21 22 22 22]
+2018/04/05 17:52:39 [server: 1] return value: log index:21, term:5, isLeader:true
+aaa, 31, leader: 1
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 31}
+2018/04/05 17:52:39 leader:3, nextIndex:[24 23 23 5 23]
+2018/04/05 17:52:39 leader:3, nextIndex:[24 24 23 5 23]
+2018/04/05 17:52:39 leader:3, nextIndex:[24 24 24 5 23]
+2018/04/05 17:52:39 leader:3, nextIndex:[24 24 24 5 24]
+2018/04/05 17:52:39 [server: 3] return value: log index:23, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 31}
+2018/04/05 17:52:39 leader:4, nextIndex:[33 32 32 32 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[33 33 32 32 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[33 33 33 32 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[33 33 33 33 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:32, term:2, isLeader:true
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 32}
+2018/04/05 17:52:39 leader:1, nextIndex:[23 21 22 22 22]
+2018/04/05 17:52:39 leader:1, nextIndex:[23 21 23 22 22]
+2018/04/05 17:52:39 leader:1, nextIndex:[23 21 23 23 22]
+2018/04/05 17:52:39 leader:1, nextIndex:[23 21 23 23 23]
+2018/04/05 17:52:39 [server: 1] return value: log index:22, term:5, isLeader:true
+aaa, 32, leader: 1
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 32}
+2018/04/05 17:52:39 leader:3, nextIndex:[25 24 24 5 24]
+2018/04/05 17:52:39 leader:3, nextIndex:[25 25 24 5 24]
+2018/04/05 17:52:39 leader:3, nextIndex:[25 25 25 5 24]
+2018/04/05 17:52:39 leader:3, nextIndex:[25 25 25 5 25]
+2018/04/05 17:52:39 [server: 3] return value: log index:24, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 32}
+2018/04/05 17:52:39 leader:4, nextIndex:[34 33 33 33 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[34 34 33 33 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[34 34 34 33 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[34 34 34 34 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:33, term:2, isLeader:true
+2018/04/05 17:52:39 [server: 0]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}] lastApplied 4, commitIndex: 4, received AppendEntries, &{5 1 20 1 [] 4}, arg term: 5, arg log len:0
+2018/04/05 17:52:39 [server: 0]received heartbeat
+2018/04/05 17:52:39 [server: 4]Leader, send heartbeat, period: 100ms
+
+disconnect 1
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 33}
+2018/04/05 17:52:39 leader:1, nextIndex:[24 21 23 23 23]
+2018/04/05 17:52:39 leader:1, nextIndex:[24 21 24 23 23]
+2018/04/05 17:52:39 leader:1, nextIndex:[24 21 24 24 23]
+2018/04/05 17:52:39 leader:1, nextIndex:[24 21 24 24 24]
+2018/04/05 17:52:39 [server: 1] return value: log index:23, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 33}
+2018/04/05 17:52:39 leader:3, nextIndex:[26 25 25 5 25]
+2018/04/05 17:52:39 leader:3, nextIndex:[26 26 25 5 25]
+2018/04/05 17:52:39 leader:3, nextIndex:[26 26 26 5 25]
+2018/04/05 17:52:39 leader:3, nextIndex:[26 26 26 5 26]
+2018/04/05 17:52:39 [server: 3] return value: log index:25, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 33}
+2018/04/05 17:52:39 leader:4, nextIndex:[35 34 34 34 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[35 35 34 34 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[35 35 35 34 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[35 35 35 35 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:34, term:2, isLeader:true
+2018/04/05 17:52:39 [server: 2]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{5 1 20 1 [] 4}, arg term: 5, arg log len:0
+
+connect 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 34}
+2018/04/05 17:52:39 leader:1, nextIndex:[25 21 24 24 24]
+2018/04/05 17:52:39 leader:1, nextIndex:[25 21 25 24 24]
+2018/04/05 17:52:39 leader:1, nextIndex:[25 21 25 25 24]
+2018/04/05 17:52:39 leader:1, nextIndex:[25 21 25 25 25]
+2018/04/05 17:52:39 [server: 1] return value: log index:24, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 34}
+2018/04/05 17:52:39 leader:3, nextIndex:[27 26 26 5 26]
+2018/04/05 17:52:39 leader:3, nextIndex:[27 27 26 5 26]
+2018/04/05 17:52:39 leader:3, nextIndex:[27 27 27 5 26]
+2018/04/05 17:52:39 leader:3, nextIndex:[27 27 27 5 27]
+2018/04/05 17:52:39 [server: 3] return value: log index:26, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 34}
+2018/04/05 17:52:39 leader:4, nextIndex:[36 35 35 35 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[36 36 35 35 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[36 36 36 35 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[36 36 36 36 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:35, term:2, isLeader:true
+aaa, 34, leader: 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 35}
+2018/04/05 17:52:39 leader:1, nextIndex:[26 21 25 25 25]
+2018/04/05 17:52:39 leader:1, nextIndex:[26 21 26 25 25]
+2018/04/05 17:52:39 leader:1, nextIndex:[26 21 26 26 25]
+2018/04/05 17:52:39 leader:1, nextIndex:[26 21 26 26 26]
+2018/04/05 17:52:39 [server: 1] return value: log index:25, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 35}
+2018/04/05 17:52:39 leader:3, nextIndex:[28 27 27 5 27]
+2018/04/05 17:52:39 leader:3, nextIndex:[28 28 27 5 27]
+2018/04/05 17:52:39 leader:3, nextIndex:[28 28 28 5 27]
+2018/04/05 17:52:39 leader:3, nextIndex:[28 28 28 5 28]
+2018/04/05 17:52:39 [server: 3] return value: log index:27, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 35}
+2018/04/05 17:52:39 leader:4, nextIndex:[37 36 36 36 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[37 37 36 36 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[37 37 37 36 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[37 37 37 37 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:36, term:2, isLeader:true
+aaa, 35, leader: 4
+
+disconnect 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 36}
+2018/04/05 17:52:39 leader:1, nextIndex:[27 21 26 26 26]
+2018/04/05 17:52:39 leader:1, nextIndex:[27 21 27 26 26]
+2018/04/05 17:52:39 leader:1, nextIndex:[27 21 27 27 26]
+2018/04/05 17:52:39 leader:1, nextIndex:[27 21 27 27 27]
+2018/04/05 17:52:39 [server: 1] return value: log index:26, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 36}
+2018/04/05 17:52:39 leader:3, nextIndex:[29 28 28 5 28]
+2018/04/05 17:52:39 leader:3, nextIndex:[29 29 28 5 28]
+2018/04/05 17:52:39 leader:3, nextIndex:[29 29 29 5 28]
+2018/04/05 17:52:39 leader:3, nextIndex:[29 29 29 5 29]
+2018/04/05 17:52:39 [server: 3] return value: log index:28, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 36}
+2018/04/05 17:52:39 leader:4, nextIndex:[38 37 37 37 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[38 38 37 37 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[38 38 38 37 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[38 38 38 38 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:37, term:2, isLeader:true
+2018/04/05 17:52:39 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 37}
+2018/04/05 17:52:39 leader:1, nextIndex:[28 21 27 27 27]
+2018/04/05 17:52:39 leader:1, nextIndex:[28 21 28 27 27]
+2018/04/05 17:52:39 leader:1, nextIndex:[28 21 28 28 27]
+2018/04/05 17:52:39 leader:1, nextIndex:[28 21 28 28 28]
+2018/04/05 17:52:39 [server: 1] return value: log index:27, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 37}
+2018/04/05 17:52:39 leader:3, nextIndex:[30 29 29 5 29]
+2018/04/05 17:52:39 leader:3, nextIndex:[30 30 29 5 29]
+2018/04/05 17:52:39 leader:3, nextIndex:[30 30 30 5 29]
+2018/04/05 17:52:39 leader:3, nextIndex:[30 30 30 5 30]
+2018/04/05 17:52:39 [server: 3] return value: log index:29, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 37}
+2018/04/05 17:52:39 leader:4, nextIndex:[39 38 38 38 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[39 39 38 38 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[39 39 39 38 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[39 39 39 39 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:38, term:2, isLeader:true
+
+connect 3
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 38}
+2018/04/05 17:52:39 leader:1, nextIndex:[29 21 28 28 28]
+2018/04/05 17:52:39 leader:1, nextIndex:[29 21 29 28 28]
+2018/04/05 17:52:39 leader:1, nextIndex:[29 21 29 29 28]
+2018/04/05 17:52:39 leader:1, nextIndex:[29 21 29 29 29]
+2018/04/05 17:52:39 [server: 1] return value: log index:28, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 38}
+2018/04/05 17:52:39 leader:3, nextIndex:[31 30 30 5 30]
+2018/04/05 17:52:39 leader:3, nextIndex:[31 31 30 5 30]
+2018/04/05 17:52:39 leader:3, nextIndex:[31 31 31 5 30]
+2018/04/05 17:52:39 leader:3, nextIndex:[31 31 31 5 31]
+2018/04/05 17:52:39 [server: 3] return value: log index:30, term:3, isLeader:true
+aaa, 38, leader: 3
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 38}
+2018/04/05 17:52:39 leader:4, nextIndex:[40 39 39 39 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[40 40 39 39 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[40 40 40 39 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[40 40 40 40 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:39, term:2, isLeader:true
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 39}
+2018/04/05 17:52:39 leader:1, nextIndex:[30 21 29 29 29]
+2018/04/05 17:52:39 leader:1, nextIndex:[30 21 30 29 29]
+2018/04/05 17:52:39 leader:1, nextIndex:[30 21 30 30 29]
+2018/04/05 17:52:39 leader:1, nextIndex:[30 21 30 30 30]
+2018/04/05 17:52:39 [server: 1] return value: log index:29, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 39}
+2018/04/05 17:52:39 leader:3, nextIndex:[32 31 31 5 31]
+2018/04/05 17:52:39 leader:3, nextIndex:[32 32 31 5 31]
+2018/04/05 17:52:39 leader:3, nextIndex:[32 32 32 5 31]
+2018/04/05 17:52:39 leader:3, nextIndex:[32 32 32 5 32]
+2018/04/05 17:52:39 [server: 3] return value: log index:31, term:3, isLeader:true
+aaa, 39, leader: 3
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 39}
+2018/04/05 17:52:39 leader:4, nextIndex:[41 40 40 40 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[41 41 40 40 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[41 41 41 40 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[41 41 41 41 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:40, term:2, isLeader:true
+
+disconnect 3
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 40}
+2018/04/05 17:52:39 leader:1, nextIndex:[31 21 30 30 30]
+2018/04/05 17:52:39 leader:1, nextIndex:[31 21 31 30 30]
+2018/04/05 17:52:39 leader:1, nextIndex:[31 21 31 31 30]
+2018/04/05 17:52:39 leader:1, nextIndex:[31 21 31 31 31]
+2018/04/05 17:52:39 [server: 1] return value: log index:30, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 40}
+2018/04/05 17:52:39 leader:3, nextIndex:[33 32 32 5 32]
+2018/04/05 17:52:39 leader:3, nextIndex:[33 33 32 5 32]
+2018/04/05 17:52:39 leader:3, nextIndex:[33 33 33 5 32]
+2018/04/05 17:52:39 leader:3, nextIndex:[33 33 33 5 33]
+2018/04/05 17:52:39 [server: 3] return value: log index:32, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 40}
+2018/04/05 17:52:39 leader:4, nextIndex:[42 41 41 41 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[42 42 41 41 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[42 42 42 41 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[42 42 42 42 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:41, term:2, isLeader:true
+
+connect 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 41}
+2018/04/05 17:52:39 leader:1, nextIndex:[32 21 31 31 31]
+2018/04/05 17:52:39 leader:1, nextIndex:[32 21 32 31 31]
+2018/04/05 17:52:39 leader:1, nextIndex:[32 21 32 32 31]
+2018/04/05 17:52:39 leader:1, nextIndex:[32 21 32 32 32]
+2018/04/05 17:52:39 [server: 1] return value: log index:31, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 41}
+2018/04/05 17:52:39 leader:3, nextIndex:[34 33 33 5 33]
+2018/04/05 17:52:39 leader:3, nextIndex:[34 34 33 5 33]
+2018/04/05 17:52:39 leader:3, nextIndex:[34 34 34 5 33]
+2018/04/05 17:52:39 leader:3, nextIndex:[34 34 34 5 34]
+2018/04/05 17:52:39 [server: 3] return value: log index:33, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 41}
+2018/04/05 17:52:39 leader:4, nextIndex:[43 42 42 42 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[43 43 42 42 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[43 43 43 42 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[43 43 43 43 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:42, term:2, isLeader:true
+aaa, 41, leader: 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 42}
+2018/04/05 17:52:39 leader:1, nextIndex:[33 21 32 32 32]
+2018/04/05 17:52:39 leader:1, nextIndex:[33 21 33 32 32]
+2018/04/05 17:52:39 leader:1, nextIndex:[33 21 33 33 32]
+2018/04/05 17:52:39 leader:1, nextIndex:[33 21 33 33 33]
+2018/04/05 17:52:39 [server: 1] return value: log index:32, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 42}
+2018/04/05 17:52:39 leader:3, nextIndex:[35 34 34 5 34]
+2018/04/05 17:52:39 leader:3, nextIndex:[35 35 34 5 34]
+2018/04/05 17:52:39 leader:3, nextIndex:[35 35 35 5 34]
+2018/04/05 17:52:39 leader:3, nextIndex:[35 35 35 5 35]
+2018/04/05 17:52:39 [server: 3] return value: log index:34, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 42}
+2018/04/05 17:52:39 leader:4, nextIndex:[44 43 43 43 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[44 44 43 43 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[44 44 44 43 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[44 44 44 44 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:43, term:2, isLeader:true
+aaa, 42, leader: 4
+
+disconnect 4
+
+connect 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 43}
+2018/04/05 17:52:39 leader:1, nextIndex:[34 21 33 33 33]
+2018/04/05 17:52:39 leader:1, nextIndex:[34 21 34 33 33]
+2018/04/05 17:52:39 leader:1, nextIndex:[34 21 34 34 33]
+2018/04/05 17:52:39 leader:1, nextIndex:[34 21 34 34 34]
+2018/04/05 17:52:39 [server: 1] return value: log index:33, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 43}
+2018/04/05 17:52:39 leader:3, nextIndex:[36 35 35 5 35]
+2018/04/05 17:52:39 leader:3, nextIndex:[36 36 35 5 35]
+2018/04/05 17:52:39 leader:3, nextIndex:[36 36 36 5 35]
+2018/04/05 17:52:39 leader:3, nextIndex:[36 36 36 5 36]
+2018/04/05 17:52:39 [server: 3] return value: log index:35, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 43}
+2018/04/05 17:52:39 leader:4, nextIndex:[45 44 44 44 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[45 45 44 44 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[45 45 45 44 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[45 45 45 45 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:44, term:2, isLeader:true
+aaa, 43, leader: 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 44}
+2018/04/05 17:52:39 leader:1, nextIndex:[35 21 34 34 34]
+2018/04/05 17:52:39 leader:1, nextIndex:[35 21 35 34 34]
+2018/04/05 17:52:39 leader:1, nextIndex:[35 21 35 35 34]
+2018/04/05 17:52:39 leader:1, nextIndex:[35 21 35 35 35]
+2018/04/05 17:52:39 [server: 1] return value: log index:34, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 44}
+2018/04/05 17:52:39 leader:3, nextIndex:[37 36 36 5 36]
+2018/04/05 17:52:39 leader:3, nextIndex:[37 37 36 5 36]
+2018/04/05 17:52:39 leader:3, nextIndex:[37 37 37 5 36]
+2018/04/05 17:52:39 leader:3, nextIndex:[37 37 37 5 37]
+2018/04/05 17:52:39 [server: 3] return value: log index:36, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 44}
+2018/04/05 17:52:39 leader:4, nextIndex:[46 45 45 45 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[46 46 45 45 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[46 46 46 45 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[46 46 46 46 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:45, term:2, isLeader:true
+aaa, 44, leader: 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 45}
+2018/04/05 17:52:39 leader:1, nextIndex:[36 21 35 35 35]
+2018/04/05 17:52:39 leader:1, nextIndex:[36 21 36 35 35]
+2018/04/05 17:52:39 leader:1, nextIndex:[36 21 36 36 35]
+2018/04/05 17:52:39 leader:1, nextIndex:[36 21 36 36 36]
+2018/04/05 17:52:39 [server: 1] return value: log index:35, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 45}
+2018/04/05 17:52:39 leader:3, nextIndex:[38 37 37 5 37]
+2018/04/05 17:52:39 leader:3, nextIndex:[38 38 37 5 37]
+2018/04/05 17:52:39 leader:3, nextIndex:[38 38 38 5 37]
+2018/04/05 17:52:39 leader:3, nextIndex:[38 38 38 5 38]
+2018/04/05 17:52:39 [server: 3] return value: log index:37, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 45}
+2018/04/05 17:52:39 leader:4, nextIndex:[47 46 46 46 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[47 47 46 46 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[47 47 47 46 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[47 47 47 47 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:46, term:2, isLeader:true
+aaa, 45, leader: 4
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 46}
+2018/04/05 17:52:39 leader:1, nextIndex:[37 21 36 36 36]
+2018/04/05 17:52:39 leader:1, nextIndex:[37 21 37 36 36]
+2018/04/05 17:52:39 leader:1, nextIndex:[37 21 37 37 36]
+2018/04/05 17:52:39 leader:1, nextIndex:[37 21 37 37 37]
+2018/04/05 17:52:39 [server: 1] return value: log index:36, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 46}
+2018/04/05 17:52:39 leader:3, nextIndex:[39 38 38 5 38]
+2018/04/05 17:52:39 leader:3, nextIndex:[39 39 38 5 38]
+2018/04/05 17:52:39 leader:3, nextIndex:[39 39 39 5 38]
+2018/04/05 17:52:39 leader:3, nextIndex:[39 39 39 5 39]
+2018/04/05 17:52:39 [server: 3] return value: log index:38, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {2 46}
+2018/04/05 17:52:39 leader:4, nextIndex:[48 47 47 47 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[48 48 47 47 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[48 48 48 47 5]
+2018/04/05 17:52:39 leader:4, nextIndex:[48 48 48 48 5]
+2018/04/05 17:52:39 [server: 4] return value: log index:47, term:2, isLeader:true
+aaa, 46, leader: 4
+2018/04/05 17:52:39 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 0]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 47 2 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:39 [server: 4]dddd
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 47}
+2018/04/05 17:52:39 leader:1, nextIndex:[38 21 37 37 37]
+2018/04/05 17:52:39 leader:1, nextIndex:[38 21 38 37 37]
+2018/04/05 17:52:39 leader:1, nextIndex:[38 21 38 38 37]
+2018/04/05 17:52:39 leader:1, nextIndex:[38 21 38 38 38]
+2018/04/05 17:52:39 [server: 1] return value: log index:37, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 47}
+2018/04/05 17:52:39 leader:3, nextIndex:[40 39 39 5 39]
+2018/04/05 17:52:39 leader:3, nextIndex:[40 40 39 5 39]
+2018/04/05 17:52:39 leader:3, nextIndex:[40 40 40 5 39]
+2018/04/05 17:52:39 leader:3, nextIndex:[40 40 40 5 40]
+2018/04/05 17:52:39 [server: 3] return value: log index:39, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 48}
+2018/04/05 17:52:39 leader:1, nextIndex:[39 21 38 38 38]
+2018/04/05 17:52:39 leader:1, nextIndex:[39 21 39 38 38]
+2018/04/05 17:52:39 leader:1, nextIndex:[39 21 39 39 38]
+2018/04/05 17:52:39 leader:1, nextIndex:[39 21 39 39 39]
+2018/04/05 17:52:39 [server: 1] return value: log index:38, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 48}
+2018/04/05 17:52:39 leader:3, nextIndex:[41 40 40 5 40]
+2018/04/05 17:52:39 leader:3, nextIndex:[41 41 40 5 40]
+2018/04/05 17:52:39 leader:3, nextIndex:[41 41 41 5 40]
+2018/04/05 17:52:39 leader:3, nextIndex:[41 41 41 5 41]
+2018/04/05 17:52:39 [server: 3] return value: log index:40, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 4] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 2]Term:5, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{2 4 47 2 [] 4}, arg term: 2, arg log len:0
+2018/04/05 17:52:39 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 4]change to candidate
+2018/04/05 17:52:39 [server: 4]state:Candidate
+2018/04/05 17:52:39 [server: 4] Candidate, election timeout 681ms, send RequestVote: &{6 4 47 2}
+2018/04/05 17:52:39 [Enter RequestVote][server: 2]term :5 voted for:1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{6 4 47 2}
+2018/04/05 17:52:39 [RequestVote][server: 2]term :6 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2}], commitIndex: 4, received RequestVote: &{6 4 47 2}
+2018/04/05 17:52:39 [Enter RequestVote][server: 0]term :5 voted for:1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}], commitIndex: 4, received RequestVote: &{6 4 47 2}
+2018/04/05 17:52:39 [RequestVote][server: 0]term :6 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}], commitIndex: 4, received RequestVote: &{6 4 47 2}
+2018/04/05 17:52:39 [server: 4]Total granted peers: 3, total peers: 5
+2018/04/05 17:52:39 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 2]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 47 2 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 [server: 0]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 47 2 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 abc:&{{1 0} [0xc42000aee0 0xc42000af00 0xc42000af20 0xc42000af40 0xc42000af60] 0xc42004df80 4 6 4 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] 4 4 [21 48 48 48 48] [0 0 0 0 0] Leader 0xc420104000 0xc42004dfc0 0xc42005a6c0}, server: 0 reply: &{6 21 false}
+2018/04/05 17:52:39 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 0]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {1 3} {1 4} {1 5} {1 6} {1 7} {1 8} {1 9} {1 10} {1 11} {1 12} {1 13} {1 14} {1 15} {1 16} {1 17} {1 18}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 20 2 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 19
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 18
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 17
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 16
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 15
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 14
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 13
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 12
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 11
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 10
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 9
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 8
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 7
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 6
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 5
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 4
+2018/04/05 17:52:39 abc:&{{9 0} [0xc42000aee0 0xc42000af00 0xc42000af20 0xc42000af40 0xc42000af60] 0xc42004df80 4 6 4 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] 4 4 [5 48 48 48 48] [0 0 0 0 0] Leader 0xc420104000 0xc42004dfc0 0xc42005a6c0}, server: 0 reply: &{6 21 false}
+2018/04/05 17:52:39 [server: 0]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 4 1 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 [server: 0]received heartbeat
+2018/04/05 17:52:39 [server: 4]Consistency check: nextIndex: [5 48 48 48 48]
+2018/04/05 17:52:39 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 2]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 47 2 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 abc:&{{1 0} [0xc42000aee0 0xc42000af00 0xc42000af20 0xc42000af40 0xc42000af60] 0xc42004df80 4 6 4 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] 4 4 [48 48 5 48 48] [47 0 0 0 0] Leader 0xc420104000 0xc42004dfc0 0xc42005a6c0}, server: 2 reply: &{6 5 false}
+2018/04/05 17:52:39 [server: 2]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 4 1 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 [server: 2]received heartbeat
+2018/04/05 17:52:39 [server: 4]Consistency check: nextIndex: [48 48 5 48 48]
+2018/04/05 17:52:39 [server: 0]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 47 2 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 2]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 4 1 [{2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] 4}, arg term: 6, arg log len:43
+2018/04/05 17:52:39 abc:&{{1 0} [0xc42000aee0 0xc42000af00 0xc42000af20 0xc42000af40 0xc42000af60] 0xc42004df80 4 6 4 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] 4 4 [5 48 48 48 48] [47 0 47 0 0] Leader 0xc420104000 0xc42004dfc0 0xc42005a6c0}, server: 0 reply: &{6 5 false}
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 49}
+2018/04/05 17:52:39 leader:1, nextIndex:[40 21 39 39 39]
+2018/04/05 17:52:39 leader:1, nextIndex:[40 21 40 39 39]
+2018/04/05 17:52:39 leader:1, nextIndex:[40 21 40 40 39]
+2018/04/05 17:52:39 leader:1, nextIndex:[40 21 40 40 40]
+2018/04/05 17:52:39 [server: 1] return value: log index:39, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 49}
+2018/04/05 17:52:39 leader:3, nextIndex:[42 41 41 5 41]
+2018/04/05 17:52:39 leader:3, nextIndex:[42 42 41 5 41]
+2018/04/05 17:52:39 leader:3, nextIndex:[42 42 42 5 41]
+2018/04/05 17:52:39 leader:3, nextIndex:[42 42 42 5 42]
+2018/04/05 17:52:39 [server: 3] return value: log index:41, term:3, isLeader:true
+2018/04/05 17:52:39 [server: 0]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 4 1 [] 4}, arg term: 6, arg log len:0
+2018/04/05 17:52:39 [server: 0]received heartbeat
+2018/04/05 17:52:39 [server: 4]Consistency check: nextIndex: [5 48 48 48 48]
+2018/04/05 17:52:39 [server: 0]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{6 4 4 1 [{2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] 4}, arg term: 6, arg log len:43
+2018/04/05 17:52:39 [server: 4]matchIndex: [47 0 47 0 47], cntr: map[47:3 0:5], rf.commitIndex: 47
+2018/04/05 17:52:39 [server: 4]lastApplied: 4, commitIndex: 47
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 4 5}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 5 6}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 6 7}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 7 8}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 8 9}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 9 10}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 10 11}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 11 12}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 12 13}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 13 14}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 14 15}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 15 16}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 16 17}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 17 18}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 18 19}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 19 20}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 20 21}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 21 22}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 22 23}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 23 24}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 24 25}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 25 26}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 26 27}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 27 28}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 28 29}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 29 30}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 30 31}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 31 32}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 32 33}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 33 34}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 34 35}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 35 36}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 36 37}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 37 38}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 38 39}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 39 40}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 40 41}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 41 42}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 42 43}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 43 44}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 44 45}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 45 46}
+2018/04/05 17:52:39 [server: 4]send committed log to service: {true 46 47}
+2018/04/05 17:52:39 [server: 4]Encode: rf currentTerm: 6, votedFor: 4, log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}], persist data: [3 4 0 12 3 4 0 8 3 4 0 2 5 4 0 254 78 30 3 4 0 2 3 4 0 0 3 4 0 2 3 4 0 2 3 4 0 2 3 4 0 4 3 4 0 4 3 4 0 8 3 4 0 4 3 4 0 10 3 4 0 4 3 4 0 12 3 4 0 4 3 4 0 14 3 4 0 4 3 4 0 16 3 4 0 4 3 4 0 18 3 4 0 4 3 4 0 20 3 4 0 4 3 4 0 22 3 4 0 4 3 4 0 24 3 4 0 4 3 4 0 26 3 4 0 4 3 4 0 28 3 4 0 4 3 4 0 30 3 4 0 4 3 4 0 32 3 4 0 4 3 4 0 34 3 4 0 4 3 4 0 36 3 4 0 4 3 4 0 38 3 4 0 4 3 4 0 40 3 4 0 4 3 4 0 42 3 4 0 4 3 4 0 44 3 4 0 4 3 4 0 46 3 4 0 4 3 4 0 48 3 4 0 4 3 4 0 50 3 4 0 4 3 4 0 52 3 4 0 4 3 4 0 54 3 4 0 4 3 4 0 56 3 4 0 4 3 4 0 58 3 4 0 4 3 4 0 60 3 4 0 4 3 4 0 62 3 4 0 4 3 4 0 64 3 4 0 4 3 4 0 66 3 4 0 4 3 4 0 68 3 4 0 4 3 4 0 70 3 4 0 4 3 4 0 72 3 4 0 4 3 4 0 74 3 4 0 4 3 4 0 76 3 4 0 4 3 4 0 78 3 4 0 4 3 4 0 80 3 4 0 4 3 4 0 82 3 4 0 4 3 4 0 84 3 4 0 4 3 4 0 86 3 4 0 4 3 4 0 88 3 4 0 4 3 4 0 90 3 4 0 4 3 4 0 92]
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {6 49}
+2018/04/05 17:52:39 leader:4, nextIndex:[49 48 48 48 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[49 49 48 48 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[49 49 49 48 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[49 49 49 49 48]
+2018/04/05 17:52:39 [server: 4] return value: log index:48, term:6, isLeader:true
+aaa, 49, leader: 4
+
+disconnect 4
+2018/04/05 17:52:39 [server: 1]Leader, send heartbeat, period: 100ms
+
+connect 3
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 50}
+2018/04/05 17:52:39 leader:1, nextIndex:[41 21 40 40 40]
+2018/04/05 17:52:39 leader:1, nextIndex:[41 21 41 40 40]
+2018/04/05 17:52:39 leader:1, nextIndex:[41 21 41 41 40]
+2018/04/05 17:52:39 leader:1, nextIndex:[41 21 41 41 41]
+2018/04/05 17:52:39 [server: 1] return value: log index:40, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 50}
+2018/04/05 17:52:39 leader:3, nextIndex:[43 42 42 5 42]
+2018/04/05 17:52:39 leader:3, nextIndex:[43 43 42 5 42]
+2018/04/05 17:52:39 leader:3, nextIndex:[43 43 43 5 42]
+2018/04/05 17:52:39 leader:3, nextIndex:[43 43 43 5 43]
+2018/04/05 17:52:39 [server: 3] return value: log index:42, term:3, isLeader:true
+aaa, 50, leader: 3
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {6 50}
+2018/04/05 17:52:39 leader:4, nextIndex:[50 49 49 49 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[50 50 49 49 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[50 50 50 49 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[50 50 50 50 48]
+2018/04/05 17:52:39 [server: 4] return value: log index:49, term:6, isLeader:true
+
+disconnect 3
+
+connect 3
+2018/04/05 17:52:39 [server: 0] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 1]appendEntriesArgs entry: {5 51}
+2018/04/05 17:52:39 leader:1, nextIndex:[42 21 41 41 41]
+2018/04/05 17:52:39 leader:1, nextIndex:[42 21 42 41 41]
+2018/04/05 17:52:39 leader:1, nextIndex:[42 21 42 42 41]
+2018/04/05 17:52:39 leader:1, nextIndex:[42 21 42 42 42]
+2018/04/05 17:52:39 [server: 1] return value: log index:41, term:5, isLeader:true
+2018/04/05 17:52:39 [server: 2] return value: log index:-1, term:-1, isLeader:false
+2018/04/05 17:52:39 [server: 3]appendEntriesArgs entry: {3 51}
+2018/04/05 17:52:39 leader:3, nextIndex:[44 43 43 5 43]
+2018/04/05 17:52:39 leader:3, nextIndex:[44 44 43 5 43]
+2018/04/05 17:52:39 leader:3, nextIndex:[44 44 44 5 43]
+2018/04/05 17:52:39 leader:3, nextIndex:[44 44 44 5 44]
+2018/04/05 17:52:39 [server: 3] return value: log index:43, term:3, isLeader:true
+aaa, 51, leader: 3
+2018/04/05 17:52:39 [server: 4]appendEntriesArgs entry: {6 51}
+2018/04/05 17:52:39 leader:4, nextIndex:[51 50 50 50 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[51 51 50 50 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[51 51 51 50 48]
+2018/04/05 17:52:39 leader:4, nextIndex:[51 51 51 51 48]
+2018/04/05 17:52:39 [server: 4] return value: log index:50, term:6, isLeader:true
+2018/04/05 17:52:39 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 2]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] lastApplied 4, commitIndex: 4, received AppendEntries, &{3 3 43 3 [] 4}, arg term: 3, arg log len:0
+2018/04/05 17:52:39 [server: 3]dddd
+2018/04/05 17:52:39 [server: 0]Term:6, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] lastApplied 4, commitIndex: 4, received AppendEntries, &{3 3 43 3 [] 4}, arg term: 3, arg log len:0
+2018/04/05 17:52:39 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 3]change to candidate
+2018/04/05 17:52:39 [server: 3]state:Candidate
+2018/04/05 17:52:39 [server: 3] Candidate, election timeout 571ms, send RequestVote: &{7 3 43 3}
+2018/04/05 17:52:39 [Enter RequestVote][server: 2]term :6 voted for:4, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}], commitIndex: 4, received RequestVote: &{7 3 43 3}
+2018/04/05 17:52:39 [RequestVote][server: 2]term :7 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}], commitIndex: 4, received RequestVote: &{7 3 43 3}
+2018/04/05 17:52:39 [Enter RequestVote][server: 0]term :6 voted for:4, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}], commitIndex: 4, received RequestVote: &{7 3 43 3}
+2018/04/05 17:52:39 [RequestVote][server: 0]term :7 voted for:-1, logs: [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}], commitIndex: 4, received RequestVote: &{7 3 43 3}
+2018/04/05 17:52:39 [server: 3]Total granted peers: 3, total peers: 5
+2018/04/05 17:52:39 [server: 3]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 2]Term:7, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] lastApplied 4, commitIndex: 4, received AppendEntries, &{7 3 43 3 [] 4}, arg term: 7, arg log len:0
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 42
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 41
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 40
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 39
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 38
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 37
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 36
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 35
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 34
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 33
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 32
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 31
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 30
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 29
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 28
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 27
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 26
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 25
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 24
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 23
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 22
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 21
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 20
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 19
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 18
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 17
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 16
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 15
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 14
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 13
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 12
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 11
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 10
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 9
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 8
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 7
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 6
+2018/04/05 17:52:39 [server: 2]FirstTermIndex: 5
+2018/04/05 17:52:39 abc:&{{1 0} [0xc42000ada0 0xc42000adc0 0xc42000ade0 0xc42000ae00 0xc42000ae20] 0xc42004de80 3 7 3 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {3 13} {3 14} {3 15} {3 16} {3 17} {3 18} {3 19} {3 20} {3 21} {3 22} {3 23} {3 24} {3 25} {3 26} {3 27} {3 28} {3 29} {3 30} {3 31} {3 32} {3 33} {3 34} {3 35} {3 36} {3 37} {3 38} {3 39} {3 40} {3 41} {3 42} {3 43} {3 44} {3 45} {3 46} {3 47} {3 48} {3 49} {3 50} {3 51}] 4 4 [44 44 5 44 44] [0 0 0 0 0] Leader 0xc42004df00 0xc42004dec0 0xc42005a600}, server: 2 reply: &{7 5 false}
+2018/04/05 17:52:39 [server: 2]Term:7, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{7 3 4 1 [] 4}, arg term: 7, arg log len:0
+2018/04/05 17:52:39 [server: 2]received heartbeat
+2018/04/05 17:52:39 [server: 3]Consistency check: nextIndex: [44 44 5 44 44]
+2018/04/05 17:52:39 [server: 0]Term:7, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {2 4} {2 5} {2 6} {2 7} {2 8} {2 9} {2 10} {2 11} {2 12} {2 13} {2 14} {2 15} {2 16} {2 17} {2 18} {2 19} {2 20} {2 21} {2 22} {2 23} {2 24} {2 25} {2 26} {2 27} {2 28} {2 29} {2 30} {2 31} {2 32} {2 33} {2 34} {2 35} {2 36} {2 37} {2 38} {2 39} {2 40} {2 41} {2 42} {2 43} {2 44} {2 45} {2 46}] lastApplied 4, commitIndex: 4, received AppendEntries, &{7 3 43 3 [] 4}, arg term: 7, arg log len:0
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 42
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 41
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 40
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 39
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 38
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 37
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 36
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 35
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 34
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 33
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 32
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 31
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 30
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 29
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 28
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 27
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 26
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 25
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 24
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 23
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 22
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 21
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 20
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 19
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 18
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 17
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 16
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 15
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 14
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 13
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 12
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 11
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 10
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 9
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 8
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 7
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 6
+2018/04/05 17:52:39 [server: 0]FirstTermIndex: 5
+2018/04/05 17:52:39 [server: 1]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 2]Term:7, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{7 3 4 1 [{3 13} {3 14} {3 15} {3 16} {3 17} {3 18} {3 19} {3 20} {3 21} {3 22} {3 23} {3 24} {3 25} {3 26} {3 27} {3 28} {3 29} {3 30} {3 31} {3 32} {3 33} {3 34} {3 35} {3 36} {3 37} {3 38} {3 39} {3 40} {3 41} {3 42} {3 43} {3 44} {3 45} {3 46} {3 47} {3 48} {3 49} {3 50} {3 51}] 4}, arg term: 7, arg log len:39
+2018/04/05 17:52:39 abc:&{{1 0} [0xc42000ada0 0xc42000adc0 0xc42000ade0 0xc42000ae00 0xc42000ae20] 0xc42004de80 3 7 3 [{0 <nil>} {1 9999} {1 0} {1 1} {1 2} {3 13} {3 14} {3 15} {3 16} {3 17} {3 18} {3 19} {3 20} {3 21} {3 22} {3 23} {3 24} {3 25} {3 26} {3 27} {3 28} {3 29} {3 30} {3 31} {3 32} {3 33} {3 34} {3 35} {3 36} {3 37} {3 38} {3 39} {3 40} {3 41} {3 42} {3 43} {3 44} {3 45} {3 46} {3 47} {3 48} {3 49} {3 50} {3 51}] 4 4 [5 44 44 44 44] [0 0 43 0 0] Leader 0xc42004df00 0xc42004dec0 0xc42005a600}, server: 0 reply: &{7 5 false}
+2018/04/05 17:52:39 [server: 0]Term:7, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{7 3 4 1 [] 4}, arg term: 7, arg log len:0
+2018/04/05 17:52:39 [server: 0]received heartbeat
+2018/04/05 17:52:39 [server: 3]Consistency check: nextIndex: [5 44 44 44 44]
+2018/04/05 17:52:39 [server: 4]Leader, send heartbeat, period: 100ms
+2018/04/05 17:52:39 [server: 0]Term:7, server log:[{0 <nil>} {1 9999} {1 0} {1 1} {1 2}] lastApplied 4, commitIndex: 4, received AppendEntries, &{7 3 4 1 [{3 13} {3 14} {3 15} {3 16} {3 17} {3 18} {3 19} {3 20} {3 21} {3 22} {3 23} {3 24} {3 25} {3 26} {3 27} {3 28} {3 29} {3 30} {3 31} {3 32} {3 33} {3 34} {3 35} {3 36} {3 37} {3 38} {3 39} {3 40} {3 41} {3 42} {3 43} {3 44} {3 45} {3 46} {3 47} {3 48} {3 49} {3 50} {3 51}] 4}, arg term: 7, arg log len:39
+2018/04/05 17:52:39 [server: 3]matchIndex: [43 0 43 43 0], cntr: map[43:3 0:5], rf.commitIndex: 43
+2018/04/05 17:52:39 [server: 3]lastApplied: 4, commitIndex: 43
+2018/04/05 17:52:39 [server: 3]send committed log to service: {true 13 5}
+2018/04/05 17:52:39 [server: 3]send committed log to service: {true 14 6}
+2018/04/05 17:52:39 apply error: commit index=5 server=3 13 != server=4 4
+exit status 1
+FAIL	raft	7.433s
