@@ -351,6 +351,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         reply.Term = rf.currentTerm
         reply.FirstTermIndex = len(rf.logs)
         reply.Success = false
+        rf.currentTerm = args.Term
         return
     } else if rf.logs[args.PrevLogIndex].LogTerm != args.PrevLogTerm {
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
@@ -370,6 +371,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         rf.logs = rf.logs[:reply.FirstTermIndex]
         reply.Term    = rf.currentTerm
         reply.Success = false
+        rf.currentTerm = args.Term
         return
     }
 
@@ -379,6 +381,10 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     } else if len(rf.logs) == args.PrevLogIndex + 1{
         for i, entry := range args.Entries {
             rf.logs = append(rf.logs[:args.PrevLogIndex + i + 1], entry)
+        }
+    } else if len(rf.logs) - 1 > args.PrevLogIndex && len(rf.logs) - 1 < args.PrevLogIndex + len(args.Entries) {
+        for i := len(rf.logs); i <= args.PrevLogIndex + len(args.Entries); i++ {
+            rf.logs = append(rf.logs[:i], args.Entries[i - args.PrevLogIndex - 1]) 
         }
     }
 
@@ -726,15 +732,15 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 rf.mu.Unlock()
                                                 return
                                             }
-                                            if detectReply.Success {
-                                                firstTermIndex = detectAppendEntriesArgs.PrevLogIndex + 1
-                                                break
-                                            }
                                             if detectReply.Term > rf.currentTerm {
                                                 rf.state = "Follower"
                                                 rf.currentTerm = detectReply.Term
                                                 rf.mu.Unlock()
                                                 return
+                                            }
+                                            if detectReply.Success {
+                                                firstTermIndex = detectAppendEntriesArgs.PrevLogIndex + 1
+                                                break
                                             }
                                             rf.nextIndex[server] = detectReply.FirstTermIndex 
                                         }
