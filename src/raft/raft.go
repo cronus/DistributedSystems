@@ -689,6 +689,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 // 2) if AppendEntries fails because of log inconsistency:
                                 //    decrement nextIndex and retry
                                 rf.mu.Lock()
+                                var firstTermIndex int
                                 // if get an old RPC reply
                                 if args.Term != rf.currentTerm {
                                     rf.mu.Unlock()
@@ -726,6 +727,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 return
                                             }
                                             if detectReply.Success {
+                                                firstTermIndex = detectAppendEntriesArgs.PrevLogIndex + 1
                                                 break
                                             }
                                             if detectReply.Term > rf.currentTerm {
@@ -736,13 +738,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             }
                                             rf.nextIndex[server] = detectReply.FirstTermIndex 
                                         }
-                                        DPrintf("[server: %v]Consistency check: nextIndex: %v", rf.me, rf.nextIndex)
+                                        DPrintf("[server: %v]Consistency check: server: %v, firstTermIndex: %v", rf.me, server, firstTermIndex)
                                         forceAppendEntriesArgs := &AppendEntriesArgs{
                                             Term         : rf.currentTerm,
                                             LeaderId     : rf.me,
-                                            PrevLogIndex : rf.nextIndex[server] - 1,
-                                            PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
-                                            Entries      : rf.logs[rf.nextIndex[server] : ],
+                                            PrevLogIndex : firstTermIndex - 1,
+                                            PrevLogTerm  : rf.logs[firstTermIndex - 1].LogTerm,
+                                            Entries      : rf.logs[firstTermIndex : ],
                                             LeaderCommit : rf.commitIndex}
 
                                         rf.mu.Unlock()
