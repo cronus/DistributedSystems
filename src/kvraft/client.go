@@ -36,10 +36,43 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 // must match the declared types of the RPC handler function's
 // arguments. and reply must be passed as a pointer.
 //
+// Each of your key/value servers ("kvservers") will have an associated Raft peer. 
+// Clerks send Put(), Append(), and Get() RPCs to the kvserver whose associated Raft is the leader. 
+// The kvserver code submits the Put/Append/Get operation to Raft, 
+// so that the Raft log holds a sequence of Put/Append/Get operations. 
+// All of the kvservers execute operations from the Raft log in order, 
+// applying the operations to their key/value databases; 
+// the intent is for the servers to maintain identical replicas of the key/value database.
+
+// A Clerk sometimes doesn't know which kvserver is the Raft leader. 
+// If the Clerk sends an RPC to the wrong kvserver, 
+// or if it cannot reach the kvserver, 
+// the Clerk should re-try by sending to a different kvserver. 
+// If the key/value service commits the operation to its Raft log 
+// (and hence applies the operation to the key/value state machine), 
+// the leader reports the result to the Clerk by responding to its RPC. 
+// If the operation failed to commit (for example, if the leader was replaced), 
+// the server reports an error, and the Clerk retries with a different server.
+
 func (ck *Clerk) Get(key string) string {
 
 	// You will have to modify this function.
-	return ""
+    getArgs := &GetArgs{
+        Key : key}
+
+    for _, kvserver := range ck.servers {
+        getReply := new(GetReply)
+        ok := kvserver.Call("KVServer.Get", getArgs, getReply)
+        
+        if ok && !getReply.WrongLeader {
+            if getReply.Err == "" {
+                return getReply.Value 
+            } else if getReply.Err == "NoKey" {
+                return ""
+            }
+        }
+    }
+    return ""
 }
 
 //
@@ -54,6 +87,19 @@ func (ck *Clerk) Get(key string) string {
 //
 func (ck *Clerk) PutAppend(key string, value string, op string) {
 	// You will have to modify this function.
+    putappendArgs := &PutAppendArgs{
+        Key   : key,
+        Value : value,
+        Op    : op}
+
+    for _, kvserver := range ck.servers {
+        putappendReply := new(PutAppendReply)
+        ok := kvserver.Call("KVServer.PutAppend", putappendArgs, putappendReply)
+        
+        if ok && !putappendReply.WrongLeader && putappendReply.Err == "" {
+            return
+        }
+    }
 }
 
 func (ck *Clerk) Put(key string, value string) {

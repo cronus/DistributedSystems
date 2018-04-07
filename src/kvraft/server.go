@@ -22,6 +22,8 @@ type Op struct {
 	// Your definitions here.
 	// Field names must start with capital letters,
 	// otherwise RPC will break.
+    Key string
+    Value string
 }
 
 type KVServer struct {
@@ -33,15 +35,47 @@ type KVServer struct {
 	maxraftstate int // snapshot if log grows this big
 
 	// Your definitions here.
+    kvStore map[string]string
 }
 
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
+    kv.mu.Lock()
+    defer kv.mu.Unlock()
+
+    // check the majority
+    if value, exist := kv.kvStore[args.Key]; exist {
+        reply.Value = value
+    } else {
+        reply.Value = ""
+    }
 }
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
+    kv.mu.Lock()
+    defer kv.mu.Unlock()
+    op := Op{
+        Key   : args.Key,
+        Value : args.Value}
+
+    index, term, isLeader := kv.rf.Start(op) 
+    DPrintf("index: %v, term: %v, isLeader: %v\n", index, term, isLeader)
+    
+    if !isLeader {
+        reply.WrongLeader = true
+    } else {
+        reply.WrongLeader = false
+    }
+
+    applyMsg :=<- kv.applyCh
+    switch args.Op {
+    case "Put":
+        kv.kvStore[args.Key] = args.Value
+    case "Append":
+        kv.kvStore[args.Key] = args.Value
+    }
 }
 
 //
@@ -84,6 +118,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 
 	// You may need initialization code here.
+    kv.kvStore = make(map[string]string)
 
 	return kv
 }
