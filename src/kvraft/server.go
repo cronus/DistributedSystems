@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-const Debug = 0
+const Debug = 1
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
 	if Debug > 0 {
@@ -41,8 +41,10 @@ type KVServer struct {
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
+    DPrintf("[kvserver: %v]Get args: %v\n", kv.me, args)
     kv.mu.Lock()
     defer kv.mu.Unlock()
+    defer DPrintf("[kvserver: %v]Get reply: %v\n", kv.me, reply)
 
     // check the majority
     if value, exist := kv.kvStore[args.Key]; exist {
@@ -54,8 +56,11 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
+    DPrintf("[kvserver: %v]PutAppend args: %v\n", kv.me, args)
     kv.mu.Lock()
     defer kv.mu.Unlock()
+    defer DPrintf("[kvserver: %v]PutAppend reply: %v\n", kv.me, reply)
+
     op := Op{
         Key   : args.Key,
         Value : args.Value}
@@ -69,12 +74,12 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
         reply.WrongLeader = false
     }
 
-    applyMsg :=<- kv.applyCh
+    //applyMsg :=<- kv.applyCh
     switch args.Op {
     case "Put":
         kv.kvStore[args.Key] = args.Value
     case "Append":
-        kv.kvStore[args.Key] = args.Value
+        kv.kvStore[args.Key] += args.Value
     }
 }
 

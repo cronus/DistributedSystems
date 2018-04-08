@@ -8,6 +8,7 @@ import "math/big"
 type Clerk struct {
 	servers []*labrpc.ClientEnd
 	// You will have to modify this struct.
+    lastLeader int
 }
 
 func nrand() int64 {
@@ -21,6 +22,7 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 	ck := new(Clerk)
 	ck.servers = servers
 	// You'll have to add code here.
+    ck.lastLeader = 0
 	return ck
 }
 
@@ -60,11 +62,13 @@ func (ck *Clerk) Get(key string) string {
     getArgs := &GetArgs{
         Key : key}
 
-    for _, kvserver := range ck.servers {
+    serverNum := len(ck.servers)
+    for i := 0; i < serverNum; i++  {
         getReply := new(GetReply)
-        ok := kvserver.Call("KVServer.Get", getArgs, getReply)
+        ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.Get", getArgs, getReply)
         
         if ok && !getReply.WrongLeader {
+            ck.lastLeader = (ck.lastLeader + i) % serverNum
             if getReply.Err == "" {
                 return getReply.Value 
             } else if getReply.Err == "NoKey" {
@@ -92,11 +96,13 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
         Value : value,
         Op    : op}
 
-    for _, kvserver := range ck.servers {
+    serverNum := len(ck.servers)
+    for i := 0; i < serverNum; i++  {
         putappendReply := new(PutAppendReply)
-        ok := kvserver.Call("KVServer.PutAppend", putappendArgs, putappendReply)
+        ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.PutAppend", putappendArgs, putappendReply)
         
         if ok && !putappendReply.WrongLeader && putappendReply.Err == "" {
+            ck.lastLeader = (ck.lastLeader + i) % serverNum
             return
         }
     }
