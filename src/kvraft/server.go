@@ -51,11 +51,12 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         Key   : args.Key,
         Value : ""}
 
-    index, term, isLeader := kv.rf.Start(op) 
-    DPrintf("[kvserver: %v]Get, index: %v, term: %v, isLeader: %v\n", kv.me, index, term, isLeader)
+    index, term1, isLeader := kv.rf.Start(op) 
+    DPrintf("[kvserver: %v]Get, index: %v, term: %v, isLeader: %v\n", kv.me, index, term1, isLeader)
 
     if !isLeader {
         reply.WrongLeader = true
+        reply.Err         = ErrWrongLeader
         reply.Value       = ""
         return
     } else {
@@ -71,7 +72,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
-            if op == kv.msgBuffer[0].Command {
+            term2, isLeaderAfterCommit := kv.rf.GetState()
+            if isLeaderAfterCommit && term1 == term2 && op == kv.msgBuffer[0].Command {
                 break
             } else {
                 DPrintf("[kvserver: %v]Get Leader has changed\n", kv.me)
@@ -104,11 +106,12 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
         Key   : args.Key,
         Value : args.Value}
 
-    index, term, isLeader := kv.rf.Start(op) 
-    DPrintf("[kvserver: %v]PutAppend, index: %v, term: %v, isLeader: %v\n", kv.me, index, term, isLeader)
+    index, term1, isLeader := kv.rf.Start(op) 
+    DPrintf("[kvserver: %v]PutAppend, index: %v, term: %v, isLeader: %v\n", kv.me, index, term1, isLeader)
     
     if !isLeader {
         reply.WrongLeader = true
+        reply.Err = ErrWrongLeader
         return
     } else {
         reply.WrongLeader = false
@@ -123,7 +126,9 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
         if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
-            if op == kv.msgBuffer[0].Command {
+            DPrintf("ddd\n")
+            term2, isLeaderAfterCommit := kv.rf.GetState()
+            if isLeaderAfterCommit && term1 == term2 && op == kv.msgBuffer[0].Command {
                 reply.Err = OK
                 break
             } else {
@@ -194,9 +199,6 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
     go func(kv *KVServer) {
         for msg := range kv.applyCh {
             kv.mu.Lock()
-            //if len(kv.msgBuffer) != 0 {
-            //    kv.cond.Wait()
-            //}
             kv.msgBuffer = append(kv.msgBuffer, msg)
             DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
             kv.cond.Broadcast()
