@@ -68,7 +68,7 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 
     // wait majority peers agree
     for {
-        if index > kv.msgBuffer[0].CommandIndex {
+        if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
             if op == kv.msgBuffer[0].Command {
@@ -83,6 +83,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     }
 
     DPrintf("[kvserver: %v]Get applyMsg: %v\n", kv.me, kv.msgBuffer[0])
+    kv.msgBuffer = kv.msgBuffer[1:]
+    kv.cond.Broadcast()
 
     if value, exist := kv.kvStore[args.Key]; exist {
         reply.Err   = OK
@@ -118,7 +120,7 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 
     // wait majority peers agree
     for {
-        if index > kv.msgBuffer[0].CommandIndex {
+        if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
             if op == kv.msgBuffer[0].Command {
@@ -133,6 +135,8 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     }
 
     DPrintf("[kvserver: %v]PutAppend applyMsg: %v\n", kv.me, kv.msgBuffer[0])
+    kv.msgBuffer = kv.msgBuffer[1:]
+    kv.cond.Broadcast()
 
     switch args.Op {
     case "Put":
@@ -184,7 +188,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 
 	// You may need initialization code here.
     kv.kvStore = make(map[string]string)
-    kv.msgBuffer = make([]raft.ApplyMsg, 1)
+    kv.msgBuffer = make([]raft.ApplyMsg, 0)
     kv.cond = sync.NewCond(&kv.mu)
 
     go func(kv *KVServer) {
@@ -193,8 +197,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
             //if len(kv.msgBuffer) != 0 {
             //    kv.cond.Wait()
             //}
-            //kv.msgBuffer = append(kv.msgBuffer, msg)
-            kv.msgBuffer[0] = msg
+            kv.msgBuffer = append(kv.msgBuffer, msg)
             DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
             kv.cond.Broadcast()
             kv.mu.Unlock()
