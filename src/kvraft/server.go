@@ -22,6 +22,7 @@ type Op struct {
 	// Your definitions here.
 	// Field names must start with capital letters,
 	// otherwise RPC will break.
+    Type string
     Key string
     Value string
 }
@@ -36,20 +37,58 @@ type KVServer struct {
 
 	// Your definitions here.
     kvStore map[string]string
+    msgBuffer []raft.ApplyMsg
+    cond *sync.Cond
 }
 
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
     DPrintf("[kvserver: %v]Get args: %v\n", kv.me, args)
+
+    op := Op{
+        Type  : "Get",
+        Key   : args.Key,
+        Value : ""}
+
+    index, term, isLeader := kv.rf.Start(op) 
+    DPrintf("[kvserver: %v]Get, index: %v, term: %v, isLeader: %v\n", kv.me, index, term, isLeader)
+
+    if !isLeader {
+        reply.WrongLeader = true
+        reply.Value       = ""
+        return
+    } else {
+        reply.WrongLeader = false
+    }
+
     kv.mu.Lock()
     defer kv.mu.Unlock()
-    defer DPrintf("[kvserver: %v]Get reply: %v\n", kv.me, reply)
+    defer DPrintf("[kvserver: %v]Get index: %v, reply: %v\n", kv.me, index, reply)
 
-    // check the majority
+    // wait majority peers agree
+    for {
+        if index > kv.msgBuffer[0].CommandIndex {
+            kv.cond.Wait()
+        } else if index == kv.msgBuffer[0].CommandIndex {
+            if op == kv.msgBuffer[0].Command {
+                break
+            } else {
+                DPrintf("[kvserver: %v]Get Leader has changed\n", kv.me)
+                reply.Err = ErrLeaderChanged
+                reply.Value = ""
+                return
+            }
+        }
+    }
+
+    DPrintf("[kvserver: %v]Get applyMsg: %v\n", kv.me, kv.msgBuffer[0])
+
     if value, exist := kv.kvStore[args.Key]; exist {
+        reply.Err   = OK
         reply.Value = value
     } else {
+        reply.Err   = ErrNoKey
         reply.Value = ""
     }
 }
@@ -57,24 +96,44 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
     DPrintf("[kvserver: %v]PutAppend args: %v\n", kv.me, args)
-    kv.mu.Lock()
-    defer kv.mu.Unlock()
-    defer DPrintf("[kvserver: %v]PutAppend reply: %v\n", kv.me, reply)
 
     op := Op{
+        Type  : args.Op,
         Key   : args.Key,
         Value : args.Value}
 
     index, term, isLeader := kv.rf.Start(op) 
-    DPrintf("index: %v, term: %v, isLeader: %v\n", index, term, isLeader)
+    DPrintf("[kvserver: %v]PutAppend, index: %v, term: %v, isLeader: %v\n", kv.me, index, term, isLeader)
     
     if !isLeader {
         reply.WrongLeader = true
+        return
     } else {
         reply.WrongLeader = false
     }
 
-    //applyMsg :=<- kv.applyCh
+    kv.mu.Lock()
+    defer kv.mu.Unlock()
+    defer DPrintf("[kvserver: %v]PutAppend index: %v, reply: %v\n", kv.me, index, reply)
+
+    // wait majority peers agree
+    for {
+        if index > kv.msgBuffer[0].CommandIndex {
+            kv.cond.Wait()
+        } else if index == kv.msgBuffer[0].CommandIndex {
+            if op == kv.msgBuffer[0].Command {
+                reply.Err = OK
+                break
+            } else {
+                DPrintf("[kvserver: %v]PutAppend Leader has changed\n", kv.me)
+                reply.Err = ErrLeaderChanged
+                return
+            }
+        }
+    }
+
+    DPrintf("[kvserver: %v]PutAppend applyMsg: %v\n", kv.me, kv.msgBuffer[0])
+
     switch args.Op {
     case "Put":
         kv.kvStore[args.Key] = args.Value
@@ -92,6 +151,7 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 func (kv *KVServer) Kill() {
 	kv.rf.Kill()
 	// Your code here, if desired.
+    close(kv.applyCh)
 }
 
 //
@@ -124,6 +184,22 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 
 	// You may need initialization code here.
     kv.kvStore = make(map[string]string)
+    kv.msgBuffer = make([]raft.ApplyMsg, 1)
+    kv.cond = sync.NewCond(&kv.mu)
+
+    go func(kv *KVServer) {
+        for msg := range kv.applyCh {
+            kv.mu.Lock()
+            //if len(kv.msgBuffer) != 0 {
+            //    kv.cond.Wait()
+            //}
+            //kv.msgBuffer = append(kv.msgBuffer, msg)
+            kv.msgBuffer[0] = msg
+            DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
+            kv.cond.Broadcast()
+            kv.mu.Unlock()
+        }
+    }(kv)
 
 	return kv
 }

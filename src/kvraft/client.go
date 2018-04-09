@@ -3,6 +3,7 @@ package raftkv
 import "labrpc"
 import "crypto/rand"
 import "math/big"
+import "time"
 
 
 type Clerk struct {
@@ -59,22 +60,33 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 func (ck *Clerk) Get(key string) string {
 
 	// You will have to modify this function.
+    hasLeader := false
+
     getArgs := &GetArgs{
         Key : key}
 
     serverNum := len(ck.servers)
-    for i := 0; i < serverNum; i++  {
-        getReply := new(GetReply)
-        ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.Get", getArgs, getReply)
-        
-        if ok && !getReply.WrongLeader {
-            ck.lastLeader = (ck.lastLeader + i) % serverNum
-            if getReply.Err == "" {
-                return getReply.Value 
-            } else if getReply.Err == "NoKey" {
-                return ""
+
+    t0 := time.Now()
+    for time.Since(t0).Seconds() < 10 {
+        for i := 0; i < serverNum; i++  {
+            getReply := new(GetReply)
+            ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.Get", getArgs, getReply)
+            
+            if ok && !getReply.WrongLeader {
+                hasLeader = true
+                ck.lastLeader = (ck.lastLeader + i) % serverNum
+                if getReply.Err == OK {
+                    return getReply.Value 
+                } else if getReply.Err == ErrNoKey {
+                    return ""
+                }
             }
+            DPrintf("[clerk]PutAppend err: %v", getReply.Err)
         }
+    }
+    if !hasLeader {
+        DPrintf("[clerk]Fail to reach agreement!\n")
     }
     return ""
 }
@@ -91,20 +103,30 @@ func (ck *Clerk) Get(key string) string {
 //
 func (ck *Clerk) PutAppend(key string, value string, op string) {
 	// You will have to modify this function.
+    hasLeader := false
     putappendArgs := &PutAppendArgs{
         Key   : key,
         Value : value,
         Op    : op}
 
     serverNum := len(ck.servers)
-    for i := 0; i < serverNum; i++  {
-        putappendReply := new(PutAppendReply)
-        ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.PutAppend", putappendArgs, putappendReply)
-        
-        if ok && !putappendReply.WrongLeader && putappendReply.Err == "" {
-            ck.lastLeader = (ck.lastLeader + i) % serverNum
-            return
+
+    t0 := time.Now()
+    for time.Since(t0).Seconds() < 10 {
+        for i := 0; i < serverNum; i++  {
+            putappendReply := new(PutAppendReply)
+            ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.PutAppend", putappendArgs, putappendReply)
+            
+            if ok && !putappendReply.WrongLeader && putappendReply.Err == OK {
+                hasLeader = true
+                ck.lastLeader = (ck.lastLeader + i) % serverNum
+                return
+            }
+            DPrintf("[clerk]PutAppend err: %v", putappendReply.Err)
         }
+    }
+    if !hasLeader {
+        DPrintf("[clerk]PutAppend fail to reach agreement!\n")
     }
 }
 
