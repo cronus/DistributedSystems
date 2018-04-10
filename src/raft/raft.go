@@ -841,7 +841,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             Command:      rf.logs[rf.lastApplied].Command,
                             CommandIndex: rf.lastApplied}
                         DPrintf("[server: %v]send committed log to service: %v\n", rf.me, applyMsg)
+                        rf.mu.Unlock()
                         applyCh <- applyMsg
+                        rf.mu.Lock()
                     }
                     rf.persist()
                 }
