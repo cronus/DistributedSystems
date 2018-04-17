@@ -25,6 +25,8 @@ type Op struct {
     Type string
     Key string
     Value string
+    ClerkId int64
+    CommandNum int
 }
 
 type KVServer struct {
@@ -36,6 +38,9 @@ type KVServer struct {
 	maxraftstate int // snapshot if log grows this big
 
 	// Your definitions here.
+    isLeader bool
+    receivedCmd map[int64]int
+
     kvStore map[string]string
     msgBuffer []raft.ApplyMsg
     cond *sync.Cond
@@ -47,9 +52,11 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     DPrintf("[kvserver: %v]Get args: %v\n", kv.me, args)
 
     op := Op{
-        Type  : "Get",
-        Key   : args.Key,
-        Value : ""}
+        Type       : "Get",
+        Key        : args.Key,
+        Value      : "",
+        ClerkId    : args.ClerkId,
+        CommandNum : args.CommandNum}
 
     index, term1, isLeader := kv.rf.Start(op) 
     DPrintf("[kvserver: %v]Get, index: %v, term: %v, isLeader: %v\n", kv.me, index, term1, isLeader)
@@ -67,18 +74,37 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]Get index: %v, reply: %v\n", kv.me, index, reply)
 
+    // check if the command is committed
+    if num, ok := kv.receivedCmd[args.ClerkId]; ok {
+        if num == -1 {
+            reply.Err = OK
+            reply.Value = kv.kvStore[args.Key]
+            return
+        }
+    } else {
+        kv.receivedCmd[args.ClerkId] = args.CommandNum 
+    }
+
+    // clear fifo if a new leader
+    if !kv.isLeader && isLeader {
+        kv.msgBuffer = kv.msgBuffer[:0]
+        DPrintf("[server: %v] Get, new Leader, clear buffer\n", kv.me)
+        kv.isLeader = isLeader
+    }
+
     // wait majority peers agree
     for {
         if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
-            term2, isLeaderAfterCommit := kv.rf.GetState()
-            if isLeaderAfterCommit && term1 == term2 && op == kv.msgBuffer[0].Command {
+            term2, isLeader := kv.rf.GetState()
+            if isLeader && term1 == term2 && op == kv.msgBuffer[0].Command {
                 break
             } else {
                 DPrintf("[kvserver: %v]Get Leader has changed\n", kv.me)
                 reply.Err = ErrLeaderChanged
                 reply.Value = ""
+                kv.isLeader = isLeader
                 return
             }
         }
@@ -95,6 +121,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         reply.Err   = ErrNoKey
         reply.Value = ""
     }
+
+    kv.receivedCmd[args.ClerkId] = -1
 }
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
@@ -102,9 +130,11 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     DPrintf("[kvserver: %v]PutAppend args: %v\n", kv.me, args)
 
     op := Op{
-        Type  : args.Op,
-        Key   : args.Key,
-        Value : args.Value}
+        Type       : args.Op,
+        Key        : args.Key,
+        Value      : args.Value,
+        ClerkId    : args.ClerkId,
+        CommandNum : args.CommandNum}
 
     index, term1, isLeader := kv.rf.Start(op) 
     DPrintf("[kvserver: %v]PutAppend, index: %v, term: %v, isLeader: %v\n", kv.me, index, term1, isLeader)
@@ -121,19 +151,36 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]PutAppend index: %v, reply: %v\n", kv.me, index, reply)
 
+    // check if the command is committed
+    if num, ok := kv.receivedCmd[args.ClerkId]; ok {
+        if num == -1 {
+            reply.Err = OK
+            return
+        }
+    } else {
+        kv.receivedCmd[args.ClerkId] = args.CommandNum 
+    }
+
+    // clear fifo if a new leader
+    if !kv.isLeader && isLeader {
+        kv.msgBuffer = kv.msgBuffer[:0]
+        DPrintf("[server: %v] PutAppend, new Leader, clear buffer\n", kv.me)
+        kv.isLeader = isLeader
+    }
+
     // wait majority peers agree
     for {
         if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
-            DPrintf("ddd\n")
-            term2, isLeaderAfterCommit := kv.rf.GetState()
-            if isLeaderAfterCommit && term1 == term2 && op == kv.msgBuffer[0].Command {
+            term2, isLeader := kv.rf.GetState()
+            if isLeader && term1 == term2 && op == kv.msgBuffer[0].Command {
                 reply.Err = OK
                 break
             } else {
                 DPrintf("[kvserver: %v]PutAppend Leader has changed\n", kv.me)
                 reply.Err = ErrLeaderChanged
+                kv.isLeader = isLeader
                 return
             }
         }
@@ -149,6 +196,8 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     case "Append":
         kv.kvStore[args.Key] += args.Value
     }
+
+    kv.receivedCmd[args.ClerkId] = -1
 }
 
 //
@@ -161,6 +210,7 @@ func (kv *KVServer) Kill() {
 	kv.rf.Kill()
 	// Your code here, if desired.
     close(kv.applyCh)
+    DPrintf("[kvserver: %v]Kill kv server\n", kv.me)
 }
 
 //
@@ -192,6 +242,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 
 	// You may need initialization code here.
+    kv.isLeader = false
     kv.kvStore = make(map[string]string)
     kv.msgBuffer = make([]raft.ApplyMsg, 0)
     kv.cond = sync.NewCond(&kv.mu)

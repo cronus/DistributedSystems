@@ -9,6 +9,8 @@ import "time"
 type Clerk struct {
 	servers []*labrpc.ClientEnd
 	// You will have to modify this struct.
+    clerkId int64
+    commandNum int
     lastLeader int
 }
 
@@ -23,6 +25,8 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 	ck := new(Clerk)
 	ck.servers = servers
 	// You'll have to add code here.
+    ck.clerkId       = nrand()
+    ck.commandNum    = 0
     ck.lastLeader = 0
 	return ck
 }
@@ -63,7 +67,11 @@ func (ck *Clerk) Get(key string) string {
     hasLeader := false
 
     getArgs := &GetArgs{
-        Key : key}
+        Key        : key,
+        ClerkId    : ck.clerkId,
+        CommandNum : ck.commandNum}
+
+    ck.commandNum++
 
     serverNum := len(ck.servers)
 
@@ -105,9 +113,13 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	// You will have to modify this function.
     hasLeader := false
     putappendArgs := &PutAppendArgs{
-        Key   : key,
-        Value : value,
-        Op    : op}
+        Key        : key,
+        Value      : value,
+        Op         : op,
+        ClerkId    : ck.clerkId,
+        CommandNum : ck.commandNum}
+
+    ck.commandNum++
 
     serverNum := len(ck.servers)
 
