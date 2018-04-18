@@ -269,7 +269,10 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         reply.Term        = rf.currentTerm 
         reply.VoteGranted = true
         rf.votedFor       = args.CandidateId
-        rf.t.Stop() 
+        if !rf.t.Stop() {
+            DPrintf("[server: %v]RequestVote: drain timer\n", rf.me)
+            <- rf.t.C
+        }
         timeout := time.Duration(300 + rand.Int31n(400))
         rf.t.Reset(timeout * time.Millisecond)
     } else {
@@ -342,7 +345,10 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     } 
 
     rf.state       = "Follower"
-    rf.t.Stop() 
+    if !rf.t.Stop() {
+        DPrintf("[server: %v]AppendEntries: drain timer\n", rf.me)
+        <- rf.t.C
+    }
     timeout := time.Duration(300 + rand.Int31n(400))
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
@@ -578,6 +584,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     case <- rf.t.C:
                         DPrintf("[server: %v]change to candidate\n", rf.me)
                         rf.state = "Candidate"
+                        // reset election timer
+                        rf.t.Reset(timeout * time.Millisecond)
                     default:
                     }
                     rf.mu.Unlock()
@@ -592,8 +600,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     // vote for itself
                     rf.votedFor = rf.me
                     grantedCnt := 1
-                    // reset election timer
-                    rf.t.Reset(timeout * time.Millisecond)
                     // send RequestVote to all other servers
                     requestVoteArgs.Term         = rf.currentTerm + 1
                     requestVoteArgs.CandidateId  = rf.me
@@ -632,7 +638,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             select {
                             // election timout elapses: start new election
                             case <- rf.t.C:
-                                rf.t.Stop()
+                                //rf.t.Stop()
                                 timeout := time.Duration(300 + rand.Int31n(400))
                                 rf.t.Reset(timeout * time.Millisecond)
                                 break loop
