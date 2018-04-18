@@ -123,6 +123,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
                 reply.Err = ErrLeaderChanged
                 reply.Value = ""
                 kv.isLeader = isLeader
+                kv.msgBuffer = kv.msgBuffer[1:]
+                kv.cond.Broadcast()
                 return
             }
         }
@@ -203,7 +205,7 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
             }
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
-            DPrintf("[kvserver: %v]PutAppend, index match: allocated %v == index in buffer %v\n", kv.me, index, kv.msgBuffer[0].CommandIndex)
+            DPrintf("[kvserver: %v]PutAppend, index match: %v\n", kv.me, index)
             term2, isLeader := kv.rf.GetState()
             if isLeader && term1 == term2 && op == kv.msgBuffer[0].Command {
                 reply.Err = OK
