@@ -42,8 +42,11 @@ type KVServer struct {
     receivedCmd map[int64]int
 
     kvStore map[string]string
-    msgBuffer []raft.ApplyMsg
     cond *sync.Cond
+
+    // need to initial when becoming Leader
+    initialIndex int
+    msgBuffer []raft.ApplyMsg
 }
 
 
@@ -95,7 +98,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 
     // clear fifo if a new leader
     if !kv.isLeader && isLeader {
-        kv.msgBuffer = kv.msgBuffer[:0]
+        kv.initialIndex = index
+        kv.msgBuffer    = kv.msgBuffer[:0]
         DPrintf("[server: %v] Get, new Leader, clear buffer\n", kv.me)
         kv.isLeader = isLeader
     }
@@ -103,8 +107,14 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     // wait majority peers agree
     for {
         if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
+            if len(kv.msgBuffer) != 0 {
+                DPrintf("[kvserver: %v]Get, index not match: allocated %v > index in buffer %v\n", kv.me, index, kv.msgBuffer[0].CommandIndex)
+            } else {
+                DPrintf("[kvserver: %v]Get, msgBuffer is empty\n", kv.me)
+            }
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
+            DPrintf("[kvserver: %v]Get, index match: %v\n", kv.me, index)
             term2, isLeader := kv.rf.GetState()
             if isLeader && term1 == term2 && op == kv.msgBuffer[0].Command {
                 break
@@ -177,7 +187,8 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 
     // clear fifo if a new leader
     if !kv.isLeader && isLeader {
-        kv.msgBuffer = kv.msgBuffer[:0]
+        kv.initialIndex = index
+        kv.msgBuffer    = kv.msgBuffer[:0]
         DPrintf("[server: %v] PutAppend, new Leader, clear buffer\n", kv.me)
         kv.isLeader = isLeader
     }
@@ -185,8 +196,14 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     // wait majority peers agree
     for {
         if len(kv.msgBuffer) == 0 || index > kv.msgBuffer[0].CommandIndex {
+            if len(kv.msgBuffer) != 0 {
+                DPrintf("[kvserver: %v]PutAppend, index not match: allocated %v > index in buffer %v\n", kv.me, index, kv.msgBuffer[0].CommandIndex)
+            } else {
+                DPrintf("[kvserver: %v]PutAppend, msgBuffer is empty\n", kv.me)
+            }
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
+            DPrintf("[kvserver: %v]PutAppend, index match: allocated %v == index in buffer %v\n", kv.me, index, kv.msgBuffer[0].CommandIndex)
             term2, isLeader := kv.rf.GetState()
             if isLeader && term1 == term2 && op == kv.msgBuffer[0].Command {
                 reply.Err = OK
@@ -263,7 +280,9 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
     go func(kv *KVServer) {
         for msg := range kv.applyCh {
             kv.mu.Lock()
-            kv.msgBuffer = append(kv.msgBuffer, msg)
+            if kv.initialIndex <= msg.CommandIndex {
+                kv.msgBuffer = append(kv.msgBuffer, msg)
+            }
             op := msg.Command.(Op)
             kv.receivedCmd[op.ClerkId] = op.CommandNum
             DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)

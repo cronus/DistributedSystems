@@ -701,7 +701,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                     rf.mu.Unlock()
                                     return
                                 }
-                                if ok && !reply.Success {
+                                if ok && reply.Success {
+                                    if rf.matchIndex[server] != args.PrevLogIndex {
+                                        rf.matchIndex[server] = args.PrevLogIndex
+                                        rf.cond.Broadcast()
+                                    } 
+                                } else if ok && !reply.Success {
                                     if rf.state != "Leader" {
                                         rf.mu.Unlock()
                                         return
@@ -776,6 +781,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 return
                                             }
                                         } else {
+                                            DPrintf("[server: %v]no reponse from %v\n", rf.me, server)
                                             rf.nextIndex[server]  = len(rf.logs)
                                         }
                                     } else {

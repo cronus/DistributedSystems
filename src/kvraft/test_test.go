@@ -10,6 +10,7 @@ import "log"
 import "strings"
 import "sync"
 import "sync/atomic"
+import "fmt"
 
 // The tester generously allows solutions to complete elections in one second
 // (much more than the paper's range of timeouts).
@@ -485,6 +486,7 @@ func TestOnePartition3A(t *testing.T) {
 
 	p1, p2 := cfg.make_partition()
 	cfg.partition(p1, p2)
+    fmt.Printf("p1: %v, p2: %v\n", p1, p2)
 
 	ckp1 := cfg.makeClient(p1)  // connect ckp1 to p1
 	ckp2a := cfg.makeClient(p2) // connect ckp2a to p2
