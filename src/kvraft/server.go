@@ -51,6 +51,24 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
     DPrintf("[kvserver: %v]Get args: %v\n", kv.me, args)
 
+    // check if the command is committed
+    kv.mu.Lock()
+    _, isLeader := kv.rf.GetState()
+    if isLeader {
+        if num, ok := kv.receivedCmd[args.ClerkId]; ok && num == args.CommandNum {
+            DPrintf("[kvserver: %v]Get, command %v is already committed.\n", kv.me, args)
+            reply.WrongLeader = false
+            reply.Err = OK
+            reply.Value = kv.kvStore[args.Key]
+            kv.mu.Unlock()
+            return
+        } else {
+            kv.receivedCmd[args.ClerkId] = -1 
+            DPrintf("[kvserver: %v]Get, command %v firstly recevied.\n", kv.me, args)
+        }
+    }
+    kv.mu.Unlock()
+
     op := Op{
         Type       : "Get",
         Key        : args.Key,
@@ -74,16 +92,6 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]Get index: %v, reply: %v\n", kv.me, index, reply)
 
-    // check if the command is committed
-    if num, ok := kv.receivedCmd[args.ClerkId]; ok {
-        if num == -1 {
-            reply.Err = OK
-            reply.Value = kv.kvStore[args.Key]
-            return
-        }
-    } else {
-        kv.receivedCmd[args.ClerkId] = args.CommandNum 
-    }
 
     // clear fifo if a new leader
     if !kv.isLeader && isLeader {
@@ -121,13 +129,28 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         reply.Err   = ErrNoKey
         reply.Value = ""
     }
-
-    kv.receivedCmd[args.ClerkId] = -1
 }
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
     DPrintf("[kvserver: %v]PutAppend args: %v\n", kv.me, args)
+
+    // check if the command is committed
+    kv.mu.Lock()
+    _, isLeader := kv.rf.GetState()
+    if isLeader {
+        if num, ok := kv.receivedCmd[args.ClerkId]; ok && num == args.CommandNum {
+            DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, args)
+            reply.WrongLeader = false
+            reply.Err = OK
+            kv.mu.Unlock()
+            return
+        } else {
+            kv.receivedCmd[args.ClerkId] = -1
+            DPrintf("[kvserver: %v]PutAppend, command %v firstly recevied.\n", kv.me, args)
+        }
+    }
+    kv.mu.Unlock()
 
     op := Op{
         Type       : args.Op,
@@ -151,15 +174,6 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]PutAppend index: %v, reply: %v\n", kv.me, index, reply)
 
-    // check if the command is committed
-    if num, ok := kv.receivedCmd[args.ClerkId]; ok {
-        if num == -1 {
-            reply.Err = OK
-            return
-        }
-    } else {
-        kv.receivedCmd[args.ClerkId] = args.CommandNum 
-    }
 
     // clear fifo if a new leader
     if !kv.isLeader && isLeader {
@@ -196,8 +210,6 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     case "Append":
         kv.kvStore[args.Key] += args.Value
     }
-
-    kv.receivedCmd[args.ClerkId] = -1
 }
 
 //
@@ -242,15 +254,18 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 
 	// You may need initialization code here.
-    kv.isLeader = false
-    kv.kvStore = make(map[string]string)
-    kv.msgBuffer = make([]raft.ApplyMsg, 0)
-    kv.cond = sync.NewCond(&kv.mu)
+    kv.isLeader    = false
+    kv.receivedCmd = make(map[int64]int)
+    kv.kvStore     = make(map[string]string)
+    kv.msgBuffer   = make([]raft.ApplyMsg, 0)
+    kv.cond        = sync.NewCond(&kv.mu)
 
     go func(kv *KVServer) {
         for msg := range kv.applyCh {
             kv.mu.Lock()
             kv.msgBuffer = append(kv.msgBuffer, msg)
+            op := msg.Command.(Op)
+            kv.receivedCmd[op.ClerkId] = op.CommandNum
             DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
             kv.cond.Broadcast()
             kv.mu.Unlock()

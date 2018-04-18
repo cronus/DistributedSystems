@@ -768,6 +768,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 rf.mu.Unlock()
                                                 return
                                             } else {
+                                                DPrintf("[server: %v]successfully append entries: %v\n", rf.me, forceReply)
                                                 rf.nextIndex[server]  = len(rf.logs) 
                                                 rf.matchIndex[server] = forceAppendEntriesArgs.PrevLogIndex + len(forceAppendEntriesArgs.Entries)
                                                 rf.mu.Unlock()
