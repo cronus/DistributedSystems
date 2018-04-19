@@ -746,6 +746,15 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             if detectReply.Term > rf.currentTerm {
                                                 rf.state = "Follower"
                                                 rf.currentTerm = detectReply.Term
+
+                                                // reset timer 
+                                                if !rf.t.Stop() {
+                                                    DPrintf("[server: %v]Leader change to follower1: drain timer\n", rf.me)
+                                                    <- rf.t.C
+                                                }
+                                                timeout := time.Duration(300 + rand.Int31n(400))
+                                                rf.t.Reset(timeout * time.Millisecond)
+
                                                 rf.mu.Unlock()
                                                 return
                                             }
@@ -776,6 +785,15 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             if forceReply.Term > rf.currentTerm {
                                                 rf.state = "Follower"
                                                 rf.currentTerm = forceReply.Term
+
+                                                // reset timer 
+                                                if !rf.t.Stop() {
+                                                    DPrintf("[server: %v]Leader change to follower2: drain timer\n", rf.me)
+                                                    <- rf.t.C
+                                                }
+                                                timeout := time.Duration(300 + rand.Int31n(400))
+                                                rf.t.Reset(timeout * time.Millisecond)
+
                                                 rf.mu.Unlock()
                                                 return
                                             } else {
@@ -793,7 +811,14 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                     } else {
                                         rf.state = "Follower"
                                         rf.currentTerm = reply.Term
-                                        DPrintf("[server: %v]dddd\n", rf.me)
+
+                                        // reset timer 
+                                        if !rf.t.Stop() {
+                                            DPrintf("[server: %v]Leader change to follower2: drain timer\n", rf.me)
+                                            <- rf.t.C
+                                        }
+                                        timeout := time.Duration(300 + rand.Int31n(400))
+                                        rf.t.Reset(timeout * time.Millisecond)
                                     }
                                 }
                                 rf.mu.Unlock()
