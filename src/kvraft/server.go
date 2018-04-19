@@ -40,7 +40,7 @@ type KVServer struct {
 
 	// Your definitions here.
     isLeader bool
-    term int
+    bufferTerm int
     receivedCmd map[int64]int
 
     kvStore map[string]string
@@ -58,22 +58,22 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     DPrintf("[kvserver: %v]Get args: %v\n", kv.me, args)
 
     // check if the command is committed
-    kv.mu.Lock()
-    _, isLeader := kv.rf.GetState()
-    if isLeader {
-        if num, ok := kv.receivedCmd[args.ClerkId]; ok && num == args.CommandNum {
-            DPrintf("[kvserver: %v]Get, command %v is already committed.\n", kv.me, args)
-            reply.WrongLeader = false
-            reply.Err = OK
-            reply.Value = kv.kvStore[args.Key]
-            kv.mu.Unlock()
-            return
-        } else {
-            kv.receivedCmd[args.ClerkId] = -1 
-            DPrintf("[kvserver: %v]Get, command %v firstly recevied.\n", kv.me, args)
-        }
-    }
-    kv.mu.Unlock()
+    //kv.mu.Lock()
+    //_, isLeader := kv.rf.GetState()
+    //if isLeader {
+    //    if num, ok := kv.receivedCmd[args.ClerkId]; ok && num == args.CommandNum {
+    //        DPrintf("[kvserver: %v]Get, command %v is already committed.\n", kv.me, args)
+    //        reply.WrongLeader = false
+    //        reply.Err = OK
+    //        reply.Value = kv.kvStore[args.Key]
+    //        kv.mu.Unlock()
+    //        return
+    //    } else {
+    //        kv.receivedCmd[args.ClerkId] = -1 
+    //        DPrintf("[kvserver: %v]Get, command %v firstly recevied.\n", kv.me, args)
+    //    }
+    //}
+    //kv.mu.Unlock()
 
     op := Op{
         Type       : "Get",
@@ -100,12 +100,12 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 
 
     // clear fifo if a new leader
-    if !kv.isLeader && isLeader || kv.term != term1 {
+    if !kv.isLeader && isLeader || kv.bufferTerm != term1 {
         kv.initialIndex = index
         kv.msgBuffer    = kv.msgBuffer[:0]
         DPrintf("[server: %v] Get, new Leader, clear buffer\n", kv.me)
         kv.isLeader = isLeader
-        kv.term     = term1
+        kv.bufferTerm     = term1
     }
 
     // wait majority peers agree
@@ -118,30 +118,26 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
             }
             term2, isLeader := kv.rf.GetState()
             DPrintf("[kvserver: %v]Get term2: %v, isLeader: %v\n", kv.me, term2, isLeader)
-            if !isLeader || term1 != term2 {
+            if !isLeader || kv.bufferTerm != term2 {
                 DPrintf("[kvserver: %v]Get Leader has changed when NOT read the msg\n", kv.me)
                 reply.Err   = ErrLeaderChanged
                 reply.Value = ""
                 kv.isLeader = isLeader
-                kv.term     = term2
-                time.Sleep(1 * time.Second)
                 return
             }
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
             DPrintf("[kvserver: %v]Get, index match: %v\n", kv.me, index)
             term3, isLeader := kv.rf.GetState()
-            if isLeader && term1 == term3 && op == kv.msgBuffer[0].Command {
+            if isLeader && kv.bufferTerm == term3 && op == kv.msgBuffer[0].Command {
                 break
             } else {
                 DPrintf("[kvserver: %v]Get Leader has changed when read the msg\n", kv.me)
                 reply.Err    = ErrLeaderChanged
                 reply.Value  = ""
                 kv.isLeader  = isLeader
-                kv.term      = term3
                 kv.msgBuffer = kv.msgBuffer[1:]
                 kv.cond.Broadcast()
-                time.Sleep(1 * time.Second)
                 return
             }
         }
@@ -165,21 +161,21 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     DPrintf("[kvserver: %v]PutAppend args: %v\n", kv.me, args)
 
     // check if the command is committed
-    kv.mu.Lock()
-    _, isLeader := kv.rf.GetState()
-    if isLeader {
-        if num, ok := kv.receivedCmd[args.ClerkId]; ok && num == args.CommandNum {
-            DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, args)
-            reply.WrongLeader = false
-            reply.Err = OK
-            kv.mu.Unlock()
-            return
-        } else {
-            kv.receivedCmd[args.ClerkId] = -1
-            DPrintf("[kvserver: %v]PutAppend, command %v firstly recevied.\n", kv.me, args)
-        }
-    }
-    kv.mu.Unlock()
+    //kv.mu.Lock()
+    //_, isLeader := kv.rf.GetState()
+    //if isLeader {
+    //    if num, ok := kv.receivedCmd[args.ClerkId]; ok && num == args.CommandNum {
+    //        DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, args)
+    //        reply.WrongLeader = false
+    //        reply.Err = OK
+    //        kv.mu.Unlock()
+    //        return
+    //    } else {
+    //        kv.receivedCmd[args.ClerkId] = -1
+    //        DPrintf("[kvserver: %v]PutAppend, command %v firstly recevied.\n", kv.me, args)
+    //    }
+    //}
+    //kv.mu.Unlock()
 
     op := Op{
         Type       : args.Op,
@@ -205,12 +201,12 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 
 
     // clear fifo if a new leader
-    if !kv.isLeader && isLeader || kv.term != term1 {
+    if !kv.isLeader && isLeader || kv.bufferTerm != term1 {
         kv.initialIndex = index
         kv.msgBuffer    = kv.msgBuffer[:0]
         DPrintf("[server: %v] PutAppend, new Leader, clear buffer\n", kv.me)
         kv.isLeader = isLeader
-        kv.term     = term1
+        kv.bufferTerm     = term1
     }
 
     // wait majority peers agree
@@ -223,29 +219,25 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
             }
             term2, isLeader := kv.rf.GetState()
             DPrintf("[kvserver: %v]PutAppend term2: %v, isLeader: %v\n", kv.me, term2, isLeader)
-            if !isLeader || term1 != term2 {
+            if !isLeader || kv.bufferTerm != term2 {
                 DPrintf("[kvserver: %v]PutAppend Leader has changed when NOT read the msg\n", kv.me)
                 reply.Err   = ErrLeaderChanged
                 kv.isLeader = isLeader
-                kv.term     = term2
-                time.Sleep(1 * time.Second)
                 return
             }
             kv.cond.Wait()
         } else if index == kv.msgBuffer[0].CommandIndex {
             DPrintf("[kvserver: %v]PutAppend, index match: %v\n", kv.me, index)
             term3, isLeader := kv.rf.GetState()
-            if isLeader && term1 == term3 && op == kv.msgBuffer[0].Command {
+            if isLeader && kv.bufferTerm == term3 && op == kv.msgBuffer[0].Command {
                 reply.Err = OK
                 break
             } else {
                 DPrintf("[kvserver: %v]PutAppend Leader has changed when read the msg\n", kv.me)
                 reply.Err    = ErrLeaderChanged
                 kv.isLeader  = isLeader
-                kv.term      = term3
                 kv.msgBuffer = kv.msgBuffer[1:]
                 kv.cond.Broadcast()
-                time.Sleep(1 * time.Second)
                 return
             }
         }
@@ -303,7 +295,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 
 	// You may need initialization code here.
     kv.isLeader    = false
-    kv.term        = 1
+    kv.bufferTerm  = 0
     kv.receivedCmd = make(map[int64]int)
     kv.kvStore     = make(map[string]string)
     kv.msgBuffer   = make([]raft.ApplyMsg, 0)
@@ -317,8 +309,17 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
                 kv.msgBuffer = append(kv.msgBuffer, msg)
             }
             op := msg.Command.(Op)
+
+            // duplicated command detection
+            if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
+                DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, op)
+                kv.cond.Broadcast()
+                kv.mu.Unlock()
+                continue
+            } 
             kv.receivedCmd[op.ClerkId] = op.CommandNum
             DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
+
             switch op.Type {
             case "Put":
                 kv.kvStore[op.Key] = op.Value
