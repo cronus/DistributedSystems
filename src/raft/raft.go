@@ -253,7 +253,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         reply.VoteGranted  = false
     } else if args.Term > rf.currentTerm {
         rf.votedFor = NULL
-        rf.currentTerm    = args.Term
+        //rf.currentTerm    = args.Term
         rf.state          = "Follower"
     }
 
