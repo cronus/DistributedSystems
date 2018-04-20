@@ -26,6 +26,7 @@ import "bytes"
 import "labgob"
 
 import "io"
+//import "reflect"
 
 //
 // as each Raft peer becomes aware that successive log entries are
@@ -46,6 +47,7 @@ type ApplyMsg struct {
 
 type LogEntry struct {
     LogTerm int
+    //CommandType reflect.Type
     Command interface{}
 }
 
@@ -139,11 +141,13 @@ func (rf *Raft) persist() {
         if i > rf.commitIndex {
             break
         }
+        DPrintf("[server: %v]Encode log: %v", rf.me, b)
         e.Encode(b.LogTerm)
+        //e.Encode(b.CommandType)
         e.Encode(b.Command)
     }
     data := buffer.Bytes()
-    DPrintf("[server: %v]Encode: rf currentTerm: %v, votedFor: %v, log:%v, persist data: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, data)
+    DPrintf("[server: %v]Encode: rf currentTerm: %v, votedFor: %v, log:%v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs)
     rf.persister.SaveRaftState(data)
 }
 
@@ -192,20 +196,16 @@ func (rf *Raft) readPersist(data []byte) {
         rf.votedFor    = votedFor
     }
     for {
-        var term int
-        var command int
-        if err := d.Decode(&term); err != nil {
+        if err := d.Decode(&log.LogTerm); err != nil {
             if err == io.EOF {
                 break
             } else {
-                DPrintf("error when decode log, err: %v\n", d.Decode(&term)) 
+                DPrintf("error when decode log, err: %v\n", err) 
             }
-        } else {
-            log.LogTerm = term
         }
-        if err := d.Decode(&command); err != nil {
-        } else {
-            log.Command = command
+
+        if err := d.Decode(&log.Command); err != nil {
+            panic(err)
         }
         rf.logs = append(rf.logs, log)
     }
@@ -446,9 +446,10 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
         term     = rf.currentTerm
         isLeader = true
 
-        logEntry        := new(LogEntry)
-        logEntry.Command = command
-        logEntry.LogTerm = rf.currentTerm
+        logEntry            := new(LogEntry)
+        logEntry.LogTerm     = rf.currentTerm
+        //logEntry.CommandType = reflect.TypeOf(command)
+        logEntry.Command     = command
         
         rf.logs = append(rf.logs, *logEntry)
 
