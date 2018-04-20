@@ -110,6 +110,9 @@ func (rf *Raft) GetState() (int, bool) {
 	return term, isleader
 }
 
+func (rf *Raft) GetLogs() (*[]LogEntry) {
+    return &rf.logs
+}
 
 //
 // save Raft's persistent state to stable storage,

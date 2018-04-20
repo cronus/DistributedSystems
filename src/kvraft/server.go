@@ -154,6 +154,9 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         reply.Err   = ErrNoKey
         reply.Value = ""
     }
+
+    // wait for agreement
+    //time.Sleep(120 * time.Millisecond)
 }
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
@@ -247,6 +250,8 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     kv.msgBuffer = kv.msgBuffer[1:]
     kv.cond.Broadcast()
 
+    // wait for agreement
+    //time.Sleep(120 * time.Millisecond)
 }
 
 //
@@ -301,6 +306,27 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
     kv.msgBuffer   = make([]raft.ApplyMsg, 0)
     kv.cond        = sync.NewCond(&kv.mu)
     kv.shutdown    = make(chan struct{})
+
+    // restore kvStore with raft logs
+    // only doable at initialization stage, since no lock on logs
+    logs := kv.rf.GetLogs()
+    for index, log := range *logs {
+        if index == 0 {
+            continue
+        }
+        op := log.Command.(Op)
+        if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
+            continue
+        } 
+        kv.receivedCmd[op.ClerkId] = op.CommandNum
+        switch op.Type {
+        case "Put":
+            kv.kvStore[op.Key] = op.Value
+        case "Append":
+            kv.kvStore[op.Key] += op.Value
+        }
+    }
+    DPrintf("[kvserver: %v]kvStore after initialization: %v", kv.me, kv.kvStore)
 
     go func(kv *KVServer) {
         for msg := range kv.applyCh {
