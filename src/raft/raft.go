@@ -144,7 +144,7 @@ func (rf *Raft) persist() {
         DPrintf("[server: %v]Encode log: %v", rf.me, b)
         e.Encode(b.LogTerm)
         //e.Encode(b.CommandType)
-        e.Encode(b.Command)
+        e.Encode(&b.Command)
     }
     data := buffer.Bytes()
     DPrintf("[server: %v]Encode: rf currentTerm: %v, votedFor: %v, log:%v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs)
@@ -187,7 +187,6 @@ func (rf *Raft) readPersist(data []byte) {
     d      := labgob.NewDecoder(buffer)
     var currentTerm int
     var votedFor int
-    var log LogEntry
     if d.Decode(&currentTerm) != nil ||
        d.Decode(&votedFor)    != nil {
        DPrintf("error in decode currentTerm and votedFor, err: %v\n", d.Decode(&currentTerm)) 
@@ -196,6 +195,7 @@ func (rf *Raft) readPersist(data []byte) {
         rf.votedFor    = votedFor
     }
     for {
+        var log LogEntry
         if err := d.Decode(&log.LogTerm); err != nil {
             if err == io.EOF {
                 break
