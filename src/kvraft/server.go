@@ -95,6 +95,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     }
 
     kv.mu.Lock()
+    // wait for agreement
+    //defer time.Sleep(120 * time.Millisecond)
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]Get index: %v, reply: %v\n", kv.me, index, reply)
 
@@ -154,9 +156,6 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         reply.Err   = ErrNoKey
         reply.Value = ""
     }
-
-    // wait for agreement
-    //time.Sleep(120 * time.Millisecond)
 }
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
@@ -199,6 +198,8 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     }
 
     kv.mu.Lock()
+    // wait for agreement
+    //defer time.Sleep(120 * time.Millisecond)
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]PutAppend index: %v, reply: %v\n", kv.me, index, reply)
 
@@ -249,9 +250,6 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     DPrintf("[kvserver: %v]PutAppend applyMsg: %v\n", kv.me, kv.msgBuffer[0])
     kv.msgBuffer = kv.msgBuffer[1:]
     kv.cond.Broadcast()
-
-    // wait for agreement
-    //time.Sleep(120 * time.Millisecond)
 }
 
 //

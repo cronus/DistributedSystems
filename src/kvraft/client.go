@@ -90,7 +90,7 @@ func (ck *Clerk) Get(key string) string {
                     return ""
                 }
             }
-            DPrintf("[clerk: %v]ok: %v, PutAppend err: %v", ck.clerkId, ok, getReply.Err)
+            DPrintf("[clerk: %v]ok: %v, PutAppend err: %v\n", ck.clerkId, ok, getReply.Err)
         }
     }
     if !hasLeader {

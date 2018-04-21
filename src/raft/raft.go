@@ -144,7 +144,7 @@ func (rf *Raft) persist() {
         if i > rf.commitIndex {
             break
         }
-        DPrintf("[server: %v]Encode log: %v", rf.me, b)
+        //DPrintf("[server: %v]Encode log: %v", rf.me, b)
         e.Encode(b.LogTerm)
         //e.Encode(b.CommandType)
         e.Encode(&b.Command)
@@ -711,8 +711,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                     rf.mu.Unlock()
                                     return
                                 }
+                                
+                                // check matchIndex in case RPC is lost during reply of log recovery 
+                                // log is attached to follower but leader not receive success reply
                                 if ok && reply.Success {
-                                    if rf.matchIndex[server] != args.PrevLogIndex {
+                                    if rf.matchIndex[server] < args.PrevLogIndex {
                                         rf.matchIndex[server] = args.PrevLogIndex
                                         rf.cond.Broadcast()
                                     } 
