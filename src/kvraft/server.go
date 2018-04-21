@@ -77,8 +77,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 
     // lock at the beginning to make sure the smallest index reset the msgBuffer
     kv.mu.Lock()
-    // wait for agreement
-    //defer time.Sleep(120 * time.Millisecond)
+    // wait a while for agreement
+    defer time.Sleep(20 * time.Millisecond)
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]Get reply: %v\n", kv.me, reply)
 
@@ -182,8 +182,8 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 
     // lock at the beginning to make sure the smallest index reset the msgBuffer
     kv.mu.Lock()
-    // wait for agreement
-    //defer time.Sleep(120 * time.Millisecond)
+    // wait a while for agreement
+    defer time.Sleep(20 * time.Millisecond)
     defer kv.mu.Unlock()
     defer DPrintf("[kvserver: %v]PutAppend reply: %v\n", kv.me, reply)
 
