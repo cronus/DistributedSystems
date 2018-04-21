@@ -533,6 +533,7 @@ func (rf *Raft) Kill() {
     rf.mu.Lock()
     defer rf.mu.Unlock()
     close(rf.shutdown)
+    rf.cond.Broadcast()
 }
 
 //
@@ -579,6 +580,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
             }
             select {
             case <-rf.shutdown:
+                rf.mu.Unlock()
                 DPrintf("[server: %v]Close state machine goroutine\n", rf.me);
                 return
             default:
