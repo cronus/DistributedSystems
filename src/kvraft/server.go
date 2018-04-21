@@ -75,6 +75,13 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     //}
     //kv.mu.Unlock()
 
+    // lock at the beginning to make sure the smallest index reset the msgBuffer
+    kv.mu.Lock()
+    // wait for agreement
+    //defer time.Sleep(120 * time.Millisecond)
+    defer kv.mu.Unlock()
+    defer DPrintf("[kvserver: %v]Get reply: %v\n", kv.me, reply)
+
     op := Op{
         Type       : "Get",
         Key        : args.Key,
@@ -94,20 +101,14 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         reply.WrongLeader = false
     }
 
-    kv.mu.Lock()
-    // wait for agreement
-    //defer time.Sleep(120 * time.Millisecond)
-    defer kv.mu.Unlock()
-    defer DPrintf("[kvserver: %v]Get index: %v, reply: %v\n", kv.me, index, reply)
-
 
     // clear fifo if a new leader
     if !kv.isLeader && isLeader || kv.bufferTerm != term1 {
         kv.initialIndex = index
         kv.msgBuffer    = kv.msgBuffer[:0]
-        DPrintf("[server: %v] Get, new Leader, clear buffer\n", kv.me)
-        kv.isLeader = isLeader
-        kv.bufferTerm     = term1
+        DPrintf("[kvserver: %v] Get, new Leader, clear buffer\n", kv.me)
+        kv.isLeader     = isLeader
+        kv.bufferTerm   = term1
     }
 
     // wait majority peers agree
@@ -179,6 +180,13 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     //}
     //kv.mu.Unlock()
 
+    // lock at the beginning to make sure the smallest index reset the msgBuffer
+    kv.mu.Lock()
+    // wait for agreement
+    //defer time.Sleep(120 * time.Millisecond)
+    defer kv.mu.Unlock()
+    defer DPrintf("[kvserver: %v]PutAppend reply: %v\n", kv.me, reply)
+
     op := Op{
         Type       : args.Op,
         Key        : args.Key,
@@ -197,20 +205,14 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
         reply.WrongLeader = false
     }
 
-    kv.mu.Lock()
-    // wait for agreement
-    //defer time.Sleep(120 * time.Millisecond)
-    defer kv.mu.Unlock()
-    defer DPrintf("[kvserver: %v]PutAppend index: %v, reply: %v\n", kv.me, index, reply)
-
 
     // clear fifo if a new leader
     if !kv.isLeader && isLeader || kv.bufferTerm != term1 {
         kv.initialIndex = index
         kv.msgBuffer    = kv.msgBuffer[:0]
-        DPrintf("[server: %v] PutAppend, new Leader, clear buffer\n", kv.me)
-        kv.isLeader = isLeader
-        kv.bufferTerm     = term1
+        DPrintf("[kvserver: %v] PutAppend, new Leader, clear buffer\n", kv.me)
+        kv.isLeader     = isLeader
+        kv.bufferTerm   = term1
     }
 
     // wait majority peers agree
