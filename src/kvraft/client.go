@@ -90,7 +90,7 @@ func (ck *Clerk) Get(key string) string {
                     return ""
                 }
             }
-            DPrintf("[clerk: %v]ok: %v, PutAppend err: %v\n", ck.clerkId, ok, getReply.Err)
+            DPrintf("[clerk: %v]ok: %v, Get err: %v on server %v", ck.clerkId, ok, putappendReply.Err, (ck.lastLeader + i)%serverNum)
         }
     }
     if !hasLeader {
@@ -134,7 +134,7 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
                 ck.lastLeader = (ck.lastLeader + i) % serverNum
                 return
             }
-            DPrintf("[clerk: %v]ok: %v, PutAppend err: %v", ck.clerkId, ok, putappendReply.Err)
+            DPrintf("[clerk: %v]ok: %v, PutAppend err: %v on server %v", ck.clerkId, ok, putappendReply.Err, (ck.lastLeader + i)%serverNum)
         }
     }
     if !hasLeader {

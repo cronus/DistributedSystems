@@ -26,7 +26,6 @@ import "bytes"
 import "labgob"
 
 import "io"
-//import "reflect"
 
 //
 // as each Raft peer becomes aware that successive log entries are
@@ -47,7 +46,6 @@ type ApplyMsg struct {
 
 type LogEntry struct {
     LogTerm int
-    //CommandType reflect.Type
     Command interface{}
 }
 
@@ -146,7 +144,6 @@ func (rf *Raft) persist() {
         }
         //DPrintf("[server: %v]Encode log: %v", rf.me, b)
         e.Encode(b.LogTerm)
-        //e.Encode(b.CommandType)
         e.Encode(&b.Command)
     }
     data := buffer.Bytes()
@@ -451,7 +448,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
         logEntry            := new(LogEntry)
         logEntry.LogTerm     = rf.currentTerm
-        //logEntry.CommandType = reflect.TypeOf(command)
         logEntry.Command     = command
         
         rf.logs = append(rf.logs, *logEntry)

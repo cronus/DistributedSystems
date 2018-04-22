@@ -15,6 +15,7 @@ import "raft"
 import "fmt"
 import "time"
 import "sync/atomic"
+import "log"
 
 func randstring(n int) string {
 	b := make([]byte, 2*n)
@@ -398,6 +399,7 @@ func (cfg *config) rpcTotal() int {
 // e.g. cfg.begin("Test (2B): RPC counts aren't too high")
 func (cfg *config) begin(description string) {
 	fmt.Printf("%s ...\n", description)
+	log.Printf("%s ...\n", description)
 	cfg.t0 = time.Now()
 	cfg.rpcs0 = cfg.rpcTotal()
 	atomic.StoreInt32(&cfg.ops, 0)
