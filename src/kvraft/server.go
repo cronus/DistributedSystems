@@ -7,6 +7,7 @@ import (
 	"raft"
 	"sync"
     "time"
+    "fmt"
 )
 
 const Debug = 1
@@ -121,7 +122,7 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
             }
             term2, isLeader := kv.rf.GetState()
             DPrintf("[kvserver: %v]Get term2: %v, isLeader: %v\n", kv.me, term2, isLeader)
-            if !isLeader || kv.bufferTerm != term2 {
+            if !isLeader || term1 != term2 {
                 DPrintf("[kvserver: %v]Get Leader has changed when NOT read the msg\n", kv.me)
                 reply.Err   = ErrLeaderChanged
                 reply.Value = ""
@@ -132,7 +133,7 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
         } else if index == kv.msgBuffer[0].CommandIndex {
             DPrintf("[kvserver: %v]Get, index match: %v\n", kv.me, index)
             term3, isLeader := kv.rf.GetState()
-            if isLeader && kv.bufferTerm == term3 && op == kv.msgBuffer[0].Command {
+            if isLeader && term1 == term3 && op == kv.msgBuffer[0].Command {
                 break
             } else {
                 DPrintf("[kvserver: %v]Get Leader has changed when read the msg\n", kv.me)
@@ -142,6 +143,20 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
                 kv.msgBuffer = kv.msgBuffer[1:]
                 kv.cond.Broadcast()
                 return
+            }
+        } else {
+            DPrintf("[kvserver: %v]Get, index %v < index in buffer %v\n", kv.me, index, kv.msgBuffer[0].CommandIndex)
+            term4, isLeader := kv.rf.GetState()
+            DPrintf("[kvserver: %v]Get term4: %v, isLeader: %v\n", kv.me, term4, isLeader)
+            if !isLeader || term1 != term4 {
+                DPrintf("[kvserver: %v]Get Leader has changed when post read the msg\n", kv.me)
+                reply.Err   = ErrLeaderChanged
+                reply.Value = ""
+                kv.isLeader = isLeader
+                return
+            } else {
+                err := fmt.Sprintf("[kvserver: %v]Get index: %v smaller than msgBuffer[0].CommandIndex: %v, but still leader and same term", kv.me, index, kv.msgBuffer[0].CommandIndex)
+                panic(err)
             }
         }
     }
@@ -225,7 +240,7 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
             }
             term2, isLeader := kv.rf.GetState()
             DPrintf("[kvserver: %v]PutAppend term2: %v, isLeader: %v\n", kv.me, term2, isLeader)
-            if !isLeader || kv.bufferTerm != term2 {
+            if !isLeader || term1 != term2 {
                 DPrintf("[kvserver: %v]PutAppend Leader has changed when NOT read the msg\n", kv.me)
                 reply.Err   = ErrLeaderChanged
                 kv.isLeader = isLeader
@@ -235,7 +250,7 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
         } else if index == kv.msgBuffer[0].CommandIndex {
             DPrintf("[kvserver: %v]PutAppend, index match: %v\n", kv.me, index)
             term3, isLeader := kv.rf.GetState()
-            if isLeader && kv.bufferTerm == term3 && op == kv.msgBuffer[0].Command {
+            if isLeader && term1 == term3 && op == kv.msgBuffer[0].Command {
                 reply.Err = OK
                 break
             } else {
@@ -245,6 +260,19 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
                 kv.msgBuffer = kv.msgBuffer[1:]
                 kv.cond.Broadcast()
                 return
+            }
+        } else {
+            DPrintf("[kvserver: %v]PutAppend, index %v < index in buffer %v\n", kv.me, index, kv.msgBuffer[0].CommandIndex)
+            term4, isLeader := kv.rf.GetState()
+            DPrintf("[kvserver: %v]PutAppend term4: %v, isLeader: %v\n", kv.me, term4, isLeader)
+            if !isLeader || term1 != term4 {
+                DPrintf("[kvserver: %v]PutAppend Leader has changed when post read the msg\n", kv.me)
+                reply.Err   = ErrLeaderChanged
+                kv.isLeader = isLeader
+                return
+            } else {
+                err := fmt.Sprintf("[kvserver: %v]PutAppend index: %v smaller than msgBuffer[0].CommandIndex: %v, but still leader and same term", kv.me, index, kv.msgBuffer[0].CommandIndex)
+                panic(err)
             }
         }
     }

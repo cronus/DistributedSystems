@@ -273,7 +273,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
             DPrintf("[server: %v]RequestVote: drain timer\n", rf.me)
             <- rf.t.C
         }
-        timeout := time.Duration(300 + rand.Int31n(400))
+        timeout := time.Duration(500 + rand.Int31n(400))
         rf.t.Reset(timeout * time.Millisecond)
     } else {
         reply.VoteGranted = false
@@ -349,7 +349,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         DPrintf("[server: %v]AppendEntries: drain timer\n", rf.me)
         <- rf.t.C
     }
-    timeout := time.Duration(300 + rand.Int31n(400))
+    timeout := time.Duration(500 + rand.Int31n(400))
     rf.t.Reset(timeout * time.Millisecond)
     if len(rf.logs) <= args.PrevLogIndex  {
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
@@ -641,7 +641,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             // election timout elapses: start new election
                             case <- rf.t.C:
                                 //rf.t.Stop()
-                                timeout := time.Duration(300 + rand.Int31n(400))
+                                timeout := time.Duration(500 + rand.Int31n(400))
                                 rf.t.Reset(timeout * time.Millisecond)
                                 break loop
                             case reply =<- requestVoteReplyChan:
@@ -757,7 +757,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                     DPrintf("[server: %v]Leader change to follower1: drain timer\n", rf.me)
                                                     <- rf.t.C
                                                 }
-                                                timeout := time.Duration(300 + rand.Int31n(400))
+                                                timeout := time.Duration(500 + rand.Int31n(400))
                                                 rf.t.Reset(timeout * time.Millisecond)
 
                                                 rf.mu.Unlock()
@@ -796,7 +796,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                     DPrintf("[server: %v]Leader change to follower2: drain timer\n", rf.me)
                                                     <- rf.t.C
                                                 }
-                                                timeout := time.Duration(300 + rand.Int31n(400))
+                                                timeout := time.Duration(500 + rand.Int31n(400))
                                                 rf.t.Reset(timeout * time.Millisecond)
 
                                                 rf.mu.Unlock()
@@ -822,7 +822,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             DPrintf("[server: %v]Leader change to follower2: drain timer\n", rf.me)
                                             <- rf.t.C
                                         }
-                                        timeout := time.Duration(300 + rand.Int31n(400))
+                                        timeout := time.Duration(500 + rand.Int31n(400))
                                         rf.t.Reset(timeout * time.Millisecond)
                                     }
                                 }

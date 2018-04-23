@@ -415,7 +415,7 @@ func GenericTestLinearizability(t *testing.T, part string, nclients int, nserver
 	cfg.end()
 
 	log.Printf("Checking linearizability of %d operations", len(operations))
-	// start := time.Now()
+	start := time.Now()
 	ok := linearizability.CheckOperationsTimeout(linearizability.KvModel(), operations, linearizabilityCheckTimeout)
 	// dur := time.Since(start)
 	log.Printf("Linearizability check done in %s; result: %t", time.Since(start).String(), ok)
