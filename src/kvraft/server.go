@@ -341,24 +341,24 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 
     // restore kvStore with raft logs
     // only doable at initialization stage, since no lock on logs
-    logs := kv.rf.GetLogs()
-    for index, log := range *logs {
-        if index == 0 {
-            continue
-        }
-        op := log.Command.(Op)
-        if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
-            continue
-        } 
-        kv.receivedCmd[op.ClerkId] = op.CommandNum
-        switch op.Type {
-        case "Put":
-            kv.kvStore[op.Key] = op.Value
-        case "Append":
-            kv.kvStore[op.Key] += op.Value
-        }
-    }
-    DPrintf("[kvserver: %v]kvStore after initialization: %v", kv.me, kv.kvStore)
+    //logs := kv.rf.GetLogs()
+    //for index, log := range *logs {
+    //    if index == 0 {
+    //        continue
+    //    }
+    //    op := log.Command.(Op)
+    //    if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
+    //        continue
+    //    } 
+    //    kv.receivedCmd[op.ClerkId] = op.CommandNum
+    //    switch op.Type {
+    //    case "Put":
+    //        kv.kvStore[op.Key] = op.Value
+    //    case "Append":
+    //        kv.kvStore[op.Key] += op.Value
+    //    }
+    //}
+    //DPrintf("[kvserver: %v]kvStore after initialization: %v", kv.me, kv.kvStore)
 
     go func(kv *KVServer) {
         for msg := range kv.applyCh {

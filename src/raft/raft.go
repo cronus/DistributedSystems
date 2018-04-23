@@ -108,9 +108,9 @@ func (rf *Raft) GetState() (int, bool) {
 	return term, isleader
 }
 
-func (rf *Raft) GetLogs() (*[]LogEntry) {
-    return &rf.logs
-}
+//func (rf *Raft) GetLogs() (*[]LogEntry) {
+//    return &rf.logs
+//}
 
 //
 // save Raft's persistent state to stable storage,
@@ -139,9 +139,9 @@ func (rf *Raft) persist() {
         if i == 0 {
             continue
         }
-        if i > rf.commitIndex {
-            break
-        }
+        //if i > rf.commitIndex {
+        //    break
+        //}
         //DPrintf("[server: %v]Encode log: %v", rf.me, b)
         e.Encode(b.LogTerm)
         e.Encode(&b.Command)
@@ -209,8 +209,8 @@ func (rf *Raft) readPersist(data []byte) {
         }
         rf.logs = append(rf.logs, log)
     }
-    rf.commitIndex = len(rf.logs) - 1
-    rf.lastApplied = len(rf.logs) - 1
+    //rf.commitIndex = len(rf.logs) - 1
+    //rf.lastApplied = len(rf.logs) - 1
     DPrintf("[server: %v]Decode: rf currentTerm: %v, votedFor: %v, log:%v, persist data: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, data)
     
 }
@@ -388,10 +388,18 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         for i, entry := range args.Entries {
             rf.logs = append(rf.logs[:args.PrevLogIndex + i + 1], entry)
         }
+        // persist only when possible committed data
+        // for leader, it's easy to determine
+        // persist follower whenever update
+        rf.persist()
     } else if len(rf.logs) - 1 > args.PrevLogIndex && len(rf.logs) - 1 < args.PrevLogIndex + len(args.Entries) {
         for i := len(rf.logs); i <= args.PrevLogIndex + len(args.Entries); i++ {
             rf.logs = append(rf.logs[:i], args.Entries[i - args.PrevLogIndex - 1]) 
         }
+        // persist only when possible committed data
+        // for leader, it's easy to determine
+        // persist follower whenever update
+        rf.persist()
     }
 
     // 5. if leadercommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
@@ -888,7 +896,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         applyCh <- applyMsg
                         rf.mu.Lock()
                     }
-                    rf.persist()
+                    // persist only when possible committed data
+                    // for leader, it's easy to determine
+                    // persist leader during commit
+                    if rf.state == "Leader" {
+                        rf.persist()
+                    }
                 }
                 rf.cond.Wait()
                 rf.mu.Unlock()
