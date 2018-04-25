@@ -177,6 +177,7 @@ func checkSingle(model Model, subhistory *node, kill *int32) bool {
 	entry := subhistory
 	for headEntry.next != nil {
 		if atomic.LoadInt32(kill) != 0 {
+            log.Printf("[linearizability] false due to kill\n")
 			return false
 		}
         log.Printf("[linearizability]state: %v, calls:%v, entry: %v, deref entry.match: %v, headEntry.next: %v\n", state, calls, entry, entry.match, headEntry.next)
@@ -204,7 +205,7 @@ func checkSingle(model Model, subhistory *node, kill *int32) bool {
 		} else {
             log.Printf("[linearizability]return entry\n")
 			if len(calls) == 0 {
-                log.Printf("[linearizability]calls is zero\n")
+                log.Printf("[linearizability]false due to len(calls) is zero\n")
 				return false
 			}
 			callsTop := calls[len(calls)-1]
