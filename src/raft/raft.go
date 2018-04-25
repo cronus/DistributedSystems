@@ -163,7 +163,7 @@ func (rf *Raft) persist() {
 //     Decode returns io.EOF and does not modify e
 //
 func (rf *Raft) readPersist(data []byte) {
-    DPrintf("[server: %v]read persist data: %v, len of data: %v\n", rf.me, data, len(data));
+    //DPrintf("[server: %v]read persist data: %v, len of data: %v\n", rf.me, data, len(data));
 	if data == nil || len(data) < 1 { // bootstrap without any state?
 		return
 	}
@@ -721,7 +721,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 // check matchIndex in case RPC is lost during reply of log recovery 
                                 // log is attached to follower but leader not receive success reply
                                 if ok && reply.Success {
-                                    if rf.matchIndex[server] < args.PrevLogIndex {
+                                    if rf.commitIndex < args.PrevLogIndex {
                                         rf.matchIndex[server] = args.PrevLogIndex
                                         rf.cond.Broadcast()
                                     } 

@@ -4,6 +4,7 @@ import (
 	"sort"
 	"sync/atomic"
 	"time"
+    "log"
 )
 
 type entryKind bool
@@ -45,6 +46,7 @@ func makeEntries(history []Operation) []entry {
 		id++
 	}
 	sort.Sort(byTime(entries))
+    log.Printf("[linearizable]history: %v, entries: %v", history, entries)
 	return entries
 }
 
@@ -177,9 +179,11 @@ func checkSingle(model Model, subhistory *node, kill *int32) bool {
 		if atomic.LoadInt32(kill) != 0 {
 			return false
 		}
+        log.Printf("[linearizability]state: %v, calls:%v, entry: %v, deref entry.match: %v, headEntry.next: %v\n", state, calls, entry, entry.match, headEntry.next)
 		if entry.match != nil {
 			matching := entry.match // the return entry
 			ok, newState := model.Step(state, entry.value, matching.value)
+            log.Printf("[linearizability]ok: %v, newState: %v\n", ok, newState)
 			if ok {
 				newLinearized := linearized.clone().set(entry.id)
 				newCacheEntry := cacheEntry{newLinearized, newState}
@@ -198,7 +202,9 @@ func checkSingle(model Model, subhistory *node, kill *int32) bool {
 				entry = entry.next
 			}
 		} else {
+            log.Printf("[linearizability]return entry\n")
 			if len(calls) == 0 {
+                log.Printf("[linearizability]calls is zero\n")
 				return false
 			}
 			callsTop := calls[len(calls)-1]

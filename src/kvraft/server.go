@@ -81,7 +81,7 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
     // wait a while for agreement
     defer time.Sleep(50 * time.Millisecond)
     defer kv.mu.Unlock()
-    defer DPrintf("[kvserver: %v]Get reply: %v\n", kv.me, reply)
+    defer DPrintf("[kvserver: %v]Get args: %v, reply: %v\n", kv.me, args, reply)
 
     op := Op{
         Type       : "Get",
@@ -200,7 +200,7 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     // wait a while for agreement
     defer time.Sleep(50 * time.Millisecond)
     defer kv.mu.Unlock()
-    defer DPrintf("[kvserver: %v]PutAppend reply: %v\n", kv.me, reply)
+    defer DPrintf("[kvserver: %v]PutAppend args, %v, reply: %v\n", kv.me, args, reply)
 
     op := Op{
         Type       : args.Op,

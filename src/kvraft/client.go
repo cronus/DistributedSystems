@@ -94,7 +94,7 @@ func (ck *Clerk) Get(key string) string {
         }
     }
     if !hasLeader {
-        DPrintf("[clerk]Fail to reach agreement!\n")
+        DPrintf("[clerk: %v]Get fail to reach agreement!\n", ck.clerkId)
     }
     return ""
 }
@@ -138,7 +138,7 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
         }
     }
     if !hasLeader {
-        DPrintf("[clerk]PutAppend fail to reach agreement!\n")
+        DPrintf("[clerk: %v]PutAppend fail to reach agreement!\n", ck.clerkId)
     }
 }
 
