@@ -108,9 +108,26 @@ func (rf *Raft) GetState() (int, bool) {
 	return term, isleader
 }
 
-//func (rf *Raft) GetLogs() (*[]LogEntry) {
-//    return &rf.logs
-//}
+func (rf *Raft) CompactLog(snapshot []data) {
+    
+    rf.mu.Lock()
+    defer rf.mu.Unlock()
+    defer DPrintf("[server: %v]Compact log done\n", rf.me)
+    buffer := new(bytes.Buffer)
+    e      := labgob.NewEncoder(buffer)
+    e.Encode(rf.currentTerm)
+    e.Encode(rf.votedFor)
+
+    for _, b := range rf.logs {
+        e.Encode(b.LogTerm)
+        e.Encode(&b.Command)
+    }
+    state := buffer.Bytes()
+
+    // store snapshot in the persister object with 
+    // corresponding raft state
+    rf.persister.SaveStateAndSnapshot(state, snapshot)
+}
 
 //
 // save Raft's persistent state to stable storage,
@@ -146,9 +163,9 @@ func (rf *Raft) persist() {
         e.Encode(b.LogTerm)
         e.Encode(&b.Command)
     }
-    data := buffer.Bytes()
+    state := buffer.Bytes()
     DPrintf("[server: %v]Encode: rf currentTerm: %v, votedFor: %v, log:%v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs)
-    rf.persister.SaveRaftState(data)
+    rf.persister.SaveRaftState(state)
 }
 
 

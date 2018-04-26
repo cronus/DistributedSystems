@@ -333,32 +333,14 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	// You may need initialization code here.
     kv.isLeader    = false
     kv.bufferTerm  = 0
+
+    // store in snapshot
     kv.receivedCmd = make(map[int64]int)
     kv.kvStore     = make(map[string]string)
     kv.msgBuffer   = make([]raft.ApplyMsg, 0)
+
     kv.cond        = sync.NewCond(&kv.mu)
     kv.shutdown    = make(chan struct{})
-
-    // restore kvStore with raft logs
-    // only doable at initialization stage, since no lock on logs
-    //logs := kv.rf.GetLogs()
-    //for index, log := range *logs {
-    //    if index == 0 {
-    //        continue
-    //    }
-    //    op := log.Command.(Op)
-    //    if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
-    //        continue
-    //    } 
-    //    kv.receivedCmd[op.ClerkId] = op.CommandNum
-    //    switch op.Type {
-    //    case "Put":
-    //        kv.kvStore[op.Key] = op.Value
-    //    case "Append":
-    //        kv.kvStore[op.Key] += op.Value
-    //    }
-    //}
-    //DPrintf("[kvserver: %v]kvStore after initialization: %v", kv.me, kv.kvStore)
 
     go func(kv *KVServer) {
         for msg := range kv.applyCh {
@@ -402,6 +384,31 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
             }
         }
     }(kv)
+
+    // detect when the persisted Raft state grows too large
+    // hand a snapshot and tells Raft that it can discard old log entires
+    // Raft should save with persist.SaveStateAndSnapshot()
+    // kv server should restore the snapshot from the persister when it restarts
+    go func(kv *KVServer, persister *raft.Persister) {
+        for {
+            kv.mu.Lock()
+            select {
+            case <- kv.shutdown:
+                kv.mu.Unlock()
+                return
+            default:
+                // snapshot
+                if persister.raftStateSize() > kv.maxraftstate {
+                }
+
+                lastApplyMsg := msgBuffer[len(kv.msgBuffer) - 1]
+                kv.mu.Unlock()
+                // send snapshot to raft 
+                // tell it can discard logs and persist snapshot and log
+                rf.CompactLog(snapshot)
+            }
+        }
+    }(kv, persister, maxraftstate)
 
 	return kv
 }
