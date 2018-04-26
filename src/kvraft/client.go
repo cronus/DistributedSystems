@@ -76,27 +76,29 @@ func (ck *Clerk) Get(key string) string {
     serverNum := len(ck.servers)
 
     t0 := time.Now()
-    for time.Since(t0).Seconds() < 10 {
+    for time.Since(t0).Seconds() < 60 {
         for i := 0; i < serverNum; i++  {
             getReply := new(GetReply)
             ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.Get", getArgs, getReply)
             
             if ok && !getReply.WrongLeader {
-                hasLeader = true
-                ck.lastLeader = (ck.lastLeader + i) % serverNum
                 if getReply.Err == OK {
+                    hasLeader = true
+                    ck.lastLeader = (ck.lastLeader + i) % serverNum
                     return getReply.Value 
                 } else if getReply.Err == ErrNoKey {
+                    hasLeader = true
+                    ck.lastLeader = (ck.lastLeader + i) % serverNum
                     return ""
                 }
             }
-            DPrintf("[clerk: %v]ok: %v, Get err: %v on server %v", ck.clerkId, ok, getReply.Err, (ck.lastLeader + i)%serverNum)
+            DPrintf("[clerk: %v]ok: %v, Get args: %v, err: %v on server %v", ck.clerkId, ok, getArgs, getReply.Err, (ck.lastLeader + i)%serverNum)
         }
     }
     if !hasLeader {
-        DPrintf("[clerk: %v]Get fail to reach agreement!\n", ck.clerkId)
+        DPrintf("[clerk: %v]Get fail to reach agreement! args: %v\n", ck.clerkId, getArgs)
     }
-    return ""
+    panic("Fail to send Get!")
 }
 
 //
@@ -124,7 +126,7 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
     serverNum := len(ck.servers)
 
     t0 := time.Now()
-    for time.Since(t0).Seconds() < 10 {
+    for time.Since(t0).Seconds() < 60 {
         for i := 0; i < serverNum; i++  {
             putappendReply := new(PutAppendReply)
             ok := ck.servers[(ck.lastLeader + i) % serverNum].Call("KVServer.PutAppend", putappendArgs, putappendReply)
@@ -138,8 +140,9 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
         }
     }
     if !hasLeader {
-        DPrintf("[clerk: %v]PutAppend fail to reach agreement!\n", ck.clerkId)
+        DPrintf("[clerk: %v]PutAppend fail to reach agreement! args: %v\n", ck.clerkId, putappendArgs)
     }
+    panic("Fail to send PutAppend!")
 }
 
 func (ck *Clerk) Put(key string, value string) {
