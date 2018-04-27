@@ -42,7 +42,6 @@ type ApplyMsg struct {
 	CommandValid bool
 	Command      interface{}
 	CommandIndex int
-    CommandTerm int
     Snapshot []byte
 }
 
@@ -92,6 +91,11 @@ type Raft struct {
     t *time.Timer
     cond *sync.Cond
     shutdown chan struct{}
+
+    // snapshot
+    lastIncludedIndex int
+    lastIncludedTerm int
+    snapshotData []byte
 }
 
 const NULL = -1
@@ -110,15 +114,29 @@ func (rf *Raft) GetState() (int, bool) {
 	return term, isleader
 }
 
-func (rf *Raft) CompactLog(snapshot []byte, lastIndex int) {
+func (rf *Raft) CompactLog(snapshotData []byte, lastIndex int) {
     
     rf.mu.Lock()
+    DPrintf("[server: %v]Compact lastIndex: %v, logs: %v\n", rf.me, lastIndex, rf.logs)
     defer rf.mu.Unlock()
-    defer DPrintf("[server: %v]Compact log done\n", rf.me)
 
-    rf.logs = rf[lastIndex + 1:]
-    buffer := new(bytes.Buffer)
+    rf.lastIncludedTerm  = rf.logs[lastIndex - rf.lastIncludedIndex - 1].LogTerm
+    rf.lastIncludedIndex = lastIndex
+    rf.snapshotData      = snapshotData
+
+    // discard logs
+    rf.logs = rf.logs[lastIndex - rf.lastIncludedIndex:]
+
+    // encode metadata for snapshot
+    buffer := bytes.NewBuffer(snapshotData)
     e      := labgob.NewEncoder(buffer)
+    e.Encode(rf.lastIncludedIndex)
+    e.Encode(rf.lastIncludedTerm)
+    snapshot := buffer.Bytes()
+
+    // encode state
+    buffer = new(bytes.Buffer)
+    e      = labgob.NewEncoder(buffer)
     e.Encode(rf.currentTerm)
     e.Encode(rf.votedFor)
 
@@ -131,6 +149,30 @@ func (rf *Raft) CompactLog(snapshot []byte, lastIndex int) {
     // store snapshot in the persister object with 
     // corresponding raft state
     rf.persister.SaveStateAndSnapshot(state, snapshot)
+}
+
+func (rf *Raft) persistSnapshot(data []byte) {
+
+}
+
+func (rf *Raft) readSnapshot(data []byte) {
+	if data == nil || len(data) < 1 { 
+		return
+	}
+
+    rf.mu.Lock()
+    defer rf.mu.Unlock()
+
+    buffer := bytes.NewBuffer(data)
+    d  := labgob.NewDecoder(buffer)
+
+    if err := d.Decode(rf.lastIncludedIndex); err != nil {
+        panic(err)
+    }
+    if err := d.Decode(rf.lastIncludedTerm); err != nil {
+        panic(err)
+    }
+    rf.snapshotData = buffer.Bytes()
 }
 
 //
@@ -380,13 +422,13 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         reply.Success = false
         rf.currentTerm = args.Term
         return
-    } else if rf.logs[args.PrevLogIndex].LogTerm != args.PrevLogTerm {
+    } else if rf.logs[args.PrevLogIndex - rf.lastIncludedIndex - 1].LogTerm != args.PrevLogTerm {
     // 3. if an existing entry conflicts with a new one (same index but diff terms), 
     //    delete the existing entry and all that follows it 
         //rf.logs = rf.logs[:args.PrevLogIndex]
         DPrintf("[server: %v] log contains PrevLogIndex, but term doesn't match\n", rf.me)
         reply.FirstTermIndex = args.PrevLogIndex
-        for rf.logs[reply.FirstTermIndex].LogTerm == rf.logs[reply.FirstTermIndex - 1].LogTerm {
+        for rf.logs[reply.FirstTermIndex - rf.lastIncludedIndex - 1].LogTerm == rf.logs[reply.FirstTermIndex - 1 - rf.lastIncludedIndex - 1].LogTerm {
             if reply.FirstTermIndex > rf.commitIndex {
                 reply.FirstTermIndex--
             } else {
@@ -395,7 +437,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
             }
             DPrintf("[server: %v]FirstTermIndex: %v\n", rf.me, reply.FirstTermIndex)
         }
-        rf.logs = rf.logs[:reply.FirstTermIndex]
+        rf.logs = rf.logs[:reply.FirstTermIndex - rf.lastIncludedIndex - 1]
         reply.Term    = rf.currentTerm
         reply.Success = false
         rf.currentTerm = args.Term
@@ -407,7 +449,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         DPrintf("[server: %v]received heartbeat\n", rf.me)
     } else if len(rf.logs) == args.PrevLogIndex + 1{
         for i, entry := range args.Entries {
-            rf.logs = append(rf.logs[:args.PrevLogIndex + i + 1], entry)
+            rf.logs = append(rf.logs[:args.PrevLogIndex + i + 1 - rf.lastIncludedIndex - 1], entry)
         }
         // persist only when possible committed data
         // for leader, it's easy to determine
@@ -415,7 +457,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
         rf.persist()
     } else if len(rf.logs) - 1 > args.PrevLogIndex && len(rf.logs) - 1 < args.PrevLogIndex + len(args.Entries) {
         for i := len(rf.logs); i <= args.PrevLogIndex + len(args.Entries); i++ {
-            rf.logs = append(rf.logs[:i], args.Entries[i - args.PrevLogIndex - 1]) 
+            rf.logs = append(rf.logs[:i], args.Entries[i - args.PrevLogIndex - 1 + rf.lastIncludedIndex + 1]) 
         }
         // persist only when possible committed data
         // for leader, it's easy to determine
@@ -441,6 +483,69 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
 	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
+	return ok
+}
+
+// InstallSnapshot RPC
+type InstallSnapshotArgs struct{
+    Term              int
+    LeaderId          int
+    lastIncludedIndex int
+    lastIncludedTerm  int
+    data              []byte
+}
+
+type InstallSnapshotReply struct{
+    Term int
+}
+
+func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
+
+    rf.mu.Lock()
+    defer rf.mu.Unlock()
+    DPrintf("[server: %v]InstallSnapshot\n", rf.me)
+
+    // 1. Reply immediately if term < currentTerm
+    if args.Term < rf.currentTerm {
+        reply.Term = rf.currentTerm
+        return
+    }
+    
+    reply.Term     = rf.currentTerm
+    rf.currentTerm = args.Term
+
+
+    // 4. Reply and wait for more data chunks if done is false (omit)
+    // 5. Save snapshot file, discard any existing or partitial snapshot with smaller index
+    //persist
+
+    // 6. If existing log entry has same index and term as snapshot's last 
+    //    included entry, retain log entries following it and reply
+    if len(rf.logs) + rf.lastIncludedIndex + 1 > args.lastIncludedIndex && rf.logs[args.lastIncludedIndex - rf.lastIncludedIndex - 1].LogTerm == args.lastIncludedIndex {
+        rf.logs = rf.logs[args.lastIncludedIndex + 1:]
+        return
+    }
+
+    // 2.&3. Write data into snapshot file 
+    rf.lastIncludedIndex = args.lastIncludedIndex
+    rf.lastIncludedTerm  = args.lastIncludedTerm
+    rf.snapshotData      = args.data
+
+    // 7. Discard the entire log
+    rf.logs = rf.logs[:0]
+
+    // 8. Reset state machine usingsnapshot content (and load snapshot's cluster configuration)
+    //snapshotApplyMsg := ApplyMsg{
+    //    CommandValid: false,
+    //    Command:      nil,
+    //    CommandIndex: 0,
+    //    Snapshot:     args.data}
+
+
+}
+
+func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotArgs) bool {
+	ok := rf.peers[server].Call("Raft.InstallSnapshot", args, reply)
 	return ok
 }
 
@@ -491,8 +596,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
                 appendEntriesArgs[server] = &AppendEntriesArgs{
                     Term          : rf.currentTerm,
                     LeaderId      : rf.me,
-                    PrevLogIndex  : rf.nextIndex[server] - 1,
-                    PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                    PrevLogIndex  : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
+                    PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
                     Entries       : []LogEntry{*logEntry},
                     LeaderCommit  : rf.commitIndex}
 
@@ -594,6 +699,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.state    = "Follower"
     rf.cond     = sync.NewCond(&rf.mu)
     rf.shutdown = make(chan struct{})
+
+    // snapshot metadata
+    rf.lastIncludedIndex = -1
+    rf.lastIncludedTerm  = 0
+    rf.snapshotData = nil
 
     timeout := time.Duration(300 + rand.Int31n(400))
     rf.t = time.NewTimer(timeout * time.Millisecond)
@@ -717,8 +827,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                             appendEntriesArgs[server] = &AppendEntriesArgs{
                                 Term         : rf.currentTerm,
                                 LeaderId     : rf.me,
-                                PrevLogIndex : rf.nextIndex[server] - 1,
-                                PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                                PrevLogIndex : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
+                                PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
                                 Entries      : nil,
                                 LeaderCommit : rf.commitIndex}
 
@@ -759,8 +869,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             detectAppendEntriesArgs := &AppendEntriesArgs{
                                                 Term         : rf.currentTerm,
                                                 LeaderId     : rf.me,
-                                                PrevLogIndex : rf.nextIndex[server] - 1,
-                                                PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1].LogTerm,
+                                                PrevLogIndex : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
+                                                PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
                                                 Entries      : nil,
                                                 LeaderCommit : rf.commitIndex}
                                             rf.mu.Unlock()
@@ -803,8 +913,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             Term         : rf.currentTerm,
                                             LeaderId     : rf.me,
                                             PrevLogIndex : firstTermIndex - 1,
-                                            PrevLogTerm  : rf.logs[firstTermIndex - 1].LogTerm,
-                                            Entries      : rf.logs[firstTermIndex : ],
+                                            PrevLogTerm  : rf.logs[firstTermIndex - 1 - rf.lastIncludedIndex - 1].LogTerm,
+                                            Entries      : rf.logs[firstTermIndex - rf.lastIncludedIndex - 1 : ],
                                             LeaderCommit : rf.commitIndex}
 
                                         rf.mu.Unlock()
@@ -897,7 +1007,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     // find the max matchIndex committed
                     // paper 5.4.2, only log entries from the leader's current term are committed by counting replicas
                     for index, matchNum := range matchIndexCntr {
-                        if matchNum > len(rf.peers) / 2 && index > rf.commitIndex && rf.logs[index].LogTerm == rf.currentTerm {
+                        if matchNum > len(rf.peers) / 2 && index > rf.commitIndex && rf.logs[index - rf.lastIncludedIndex - 1].LogTerm == rf.currentTerm {
                             rf.commitIndex = index
                         }
                     }
@@ -910,9 +1020,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         rf.lastApplied++
                         applyMsg := ApplyMsg {
                             CommandValid: true,
-                            Command:      rf.logs[rf.lastApplied].Command,
+                            Command:      rf.logs[rf.lastApplied - rf.lastIncludedIndex - 1].Command,
                             CommandIndex: rf.lastApplied,
-                            CommandTerm:  rf.logs[rf.lastApplied].LogTerm,
                             Snapshot:     nil}
                         DPrintf("[server: %v]send committed log to service: %v\n", rf.me, applyMsg)
                         rf.mu.Unlock()
@@ -936,6 +1045,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
+    rf.readSnapshot(persister.ReadSnapshot())
 
 
 	return rf

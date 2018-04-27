@@ -347,37 +347,57 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
     kv.cond        = sync.NewCond(&kv.mu)
     kv.shutdown    = make(chan struct{})
 
-    go func(kv *KVServer, snapshotMsgCh chan raft.ApplyMsg) {
+    go func(kv *KVServer, persister *raft.Persister) {
         for msg := range kv.applyCh {
-            kv.mu.Lock()
-            if kv.initialIndex <= msg.CommandIndex {
-                kv.msgBuffer = append(kv.msgBuffer, msg)
-            }
-            op := msg.Command.(Op)
+            if msg.CommandValid { 
+                kv.mu.Lock()
+                if kv.initialIndex <= msg.CommandIndex {
+                    kv.msgBuffer = append(kv.msgBuffer, msg)
+                }
+                op := msg.Command.(Op)
 
-            // duplicated command detection
-            if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
-                DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, op)
+                // duplicated command detection
+                if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
+                    DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, op)
+                    kv.cond.Broadcast()
+                    kv.mu.Unlock()
+                    continue
+                } 
+                kv.receivedCmd[op.ClerkId] = op.CommandNum
+                DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
+
+                switch op.Type {
+                case "Put":
+                    kv.kvStore[op.Key] = op.Value
+                case "Append":
+                    kv.kvStore[op.Key] += op.Value
+                }
+                DPrintf("[kvserver: %v]kvStore: %v", kv.me, kv.kvStore)
                 kv.cond.Broadcast()
-                kv.mu.Unlock()
-                continue
-            } 
-            kv.receivedCmd[op.ClerkId] = op.CommandNum
-            DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
 
-            kv.lastIndex               = msg.CommandIndex
-            kv.lastTerm                = msg.CommandTerm
-            switch op.Type {
-            case "Put":
-                kv.kvStore[op.Key] = op.Value
-            case "Append":
-                kv.kvStore[op.Key] += op.Value
+                // detect when the persisted Raft state grows too large
+                // hand a snapshot and tells Raft that it can discard old log entires
+                // Raft should save with persist.SaveStateAndSnapshot()
+                // kv server should restore the snapshot from the persister when it restarts
+                if kv.maxraftstate != -1 && persister.RaftStateSize() > kv.maxraftstate {
+                    // snapshot
+                    buffer := new(bytes.Buffer)
+                    e      := labgob.NewEncoder(buffer)
+                    e.Encode(kv.kvStore)
+                    snapshot := buffer.Bytes()
+
+                    // send snapshot to raft 
+                    // tell it to discard logs and persist snapshot and remaining log
+                    kv.rf.CompactLog(snapshot, msg.CommandIndex)
+                }
+            } else {
+                // InstallSnapshot RPC
+                kv.buildState(msg.Snapshot)
             }
-            DPrintf("[kvserver: %v]kvStore: %v", kv.me, kv.kvStore)
-            kv.cond.Broadcast()
+
             kv.mu.Unlock()
         }
-    }(kv)
+    }(kv, persister)
 
     // periodically Broadcast to check term and leader
     go func(kv *KVServer) {
@@ -392,35 +412,31 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
         }
     }(kv)
 
-    // detect when the persisted Raft state grows too large
-    // hand a snapshot and tells Raft that it can discard old log entires
-    // Raft should save with persist.SaveStateAndSnapshot()
-    // kv server should restore the snapshot from the persister when it restarts
-    go func(kv *KVServer, persister *raft.Persister, snapshotMsgCh chan raft.ApplyMsg) {
-        for {
-            kv.mu.Lock()
-            select {
-            case <- kv.shutdown:
-                kv.mu.Unlock()
-                return
-            case snapshotMsg :=<- snapshotMsgCh:
-                // snapshot
-                //if persister.RaftStateSize() > kv.maxraftstate {
-                buffer := new(bytes.Buffer)
-                e      := labgob.NewEncoder(buffer)
-                e.Encode(snapshotMsg.lastIndex)
-                e.Encode(snapshotMsg.lastTerm)
-                e.Encode(kv.kvStore)
-                snapshot := buffer.Bytes()
-
-                // send snapshot to raft 
-                // tell it to discard logs and persist snapshot and remaining log
-                kv.rf.CompactLog(snapshot, kv.lastIndex)
-                //}
-                kv.mu.Unlock()
-            }
-        }
-    }(kv, persister, snapshotMsgCh)
+//    go func(kv *KVServer, persister *raft.Persister, snapshotMsgCh chan raft.ApplyMsg) {
+//        for {
+//            kv.mu.Lock()
+//            select {
+//            case <- kv.shutdown:
+//                kv.mu.Unlock()
+//                return
+//            case snapshotMsg :=<- snapshotMsgCh:
+//                // snapshot
+//                //if persister.RaftStateSize() > kv.maxraftstate {
+//                buffer := new(bytes.Buffer)
+//                e      := labgob.NewEncoder(buffer)
+//                e.Encode(snapshotMsg.lastIndex)
+//                e.Encode(snapshotMsg.lastTerm)
+//                e.Encode(kv.kvStore)
+//                snapshot := buffer.Bytes()
+//
+//                // send snapshot to raft 
+//                // tell it to discard logs and persist snapshot and remaining log
+//                kv.rf.CompactLog(snapshot, kv.lastIndex)
+//                //}
+//                kv.mu.Unlock()
+//            }
+//        }
+//    }(kv, persister, snapshotMsgCh)
 
     // recover from snapshot after a reboot
     kv.buildState(persister.ReadSnapshot())
@@ -439,14 +455,16 @@ func (kv *KVServer) buildState(data []byte) {
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
 
-    if err := d.Decode(&kv.lastIndex); err != nil {
+    var lastIndex int
+    var lastTerm int
+    if err := d.Decode(&lastIndex); err != nil {
         panic(err)
     }
-    if err := d.Decode(&kv.lastTerm); err != nil {
+    if err := d.Decode(&lastTerm); err != nil {
         panic(err)
     }
     if err := d.Decode(&kv.kvStore); err != nil {
         panic(err)
     }
-    DPrintf("[kvserver: %v]After build kvServer state: last index: %v, last term: %v, kvstore: %v\n", kv.me, kv.lastIndex, kv.lastTerm, kv.kvStore)
+    DPrintf("[kvserver: %v]After build kvServer state: last index: %v, last term: %v, kvstore: %v\n", kv.me, kv.kvStore)
 }
