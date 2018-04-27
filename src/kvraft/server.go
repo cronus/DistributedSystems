@@ -8,6 +8,7 @@ import (
 	"sync"
     "time"
     "fmt"
+    "bytes"
 )
 
 const Debug = 1
@@ -44,13 +45,17 @@ type KVServer struct {
     bufferTerm int
     receivedCmd map[int64]int
 
+    // persist when snapshot
     kvStore map[string]string
-    cond *sync.Cond
-    shutdown chan struct{}
+    //lastIndex int
+    //lastTerm int
 
     // need to initial when becoming Leader
     initialIndex int
     msgBuffer []raft.ApplyMsg
+
+    cond *sync.Cond
+    shutdown chan struct{}
 }
 
 
@@ -342,7 +347,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
     kv.cond        = sync.NewCond(&kv.mu)
     kv.shutdown    = make(chan struct{})
 
-    go func(kv *KVServer) {
+    go func(kv *KVServer, snapshotMsgCh chan raft.ApplyMsg) {
         for msg := range kv.applyCh {
             kv.mu.Lock()
             if kv.initialIndex <= msg.CommandIndex {
@@ -360,6 +365,8 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
             kv.receivedCmd[op.ClerkId] = op.CommandNum
             DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
 
+            kv.lastIndex               = msg.CommandIndex
+            kv.lastTerm                = msg.CommandTerm
             switch op.Type {
             case "Put":
                 kv.kvStore[op.Key] = op.Value
@@ -389,26 +396,57 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
     // hand a snapshot and tells Raft that it can discard old log entires
     // Raft should save with persist.SaveStateAndSnapshot()
     // kv server should restore the snapshot from the persister when it restarts
-    go func(kv *KVServer, persister *raft.Persister) {
+    go func(kv *KVServer, persister *raft.Persister, snapshotMsgCh chan raft.ApplyMsg) {
         for {
             kv.mu.Lock()
             select {
             case <- kv.shutdown:
                 kv.mu.Unlock()
                 return
-            default:
+            case snapshotMsg :=<- snapshotMsgCh:
                 // snapshot
-                if persister.raftStateSize() > kv.maxraftstate {
-                }
+                //if persister.RaftStateSize() > kv.maxraftstate {
+                buffer := new(bytes.Buffer)
+                e      := labgob.NewEncoder(buffer)
+                e.Encode(snapshotMsg.lastIndex)
+                e.Encode(snapshotMsg.lastTerm)
+                e.Encode(kv.kvStore)
+                snapshot := buffer.Bytes()
 
-                lastApplyMsg := msgBuffer[len(kv.msgBuffer) - 1]
-                kv.mu.Unlock()
                 // send snapshot to raft 
-                // tell it can discard logs and persist snapshot and log
-                rf.CompactLog(snapshot)
+                // tell it to discard logs and persist snapshot and remaining log
+                kv.rf.CompactLog(snapshot, kv.lastIndex)
+                //}
+                kv.mu.Unlock()
             }
         }
-    }(kv, persister, maxraftstate)
+    }(kv, persister, snapshotMsgCh)
+
+    // recover from snapshot after a reboot
+    kv.buildState(persister.ReadSnapshot())
 
 	return kv
+}
+
+func (kv *KVServer) buildState(data []byte) {
+    if data == nil || len(data) < 1 {
+        return
+    }
+
+    kv.mu.Lock()
+    defer kv.mu.Unlock()
+
+    buffer := bytes.NewBuffer(data)
+    d  := labgob.NewDecoder(buffer)
+
+    if err := d.Decode(&kv.lastIndex); err != nil {
+        panic(err)
+    }
+    if err := d.Decode(&kv.lastTerm); err != nil {
+        panic(err)
+    }
+    if err := d.Decode(&kv.kvStore); err != nil {
+        panic(err)
+    }
+    DPrintf("[kvserver: %v]After build kvServer state: last index: %v, last term: %v, kvstore: %v\n", kv.me, kv.lastIndex, kv.lastTerm, kv.kvStore)
 }

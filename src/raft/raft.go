@@ -42,6 +42,8 @@ type ApplyMsg struct {
 	CommandValid bool
 	Command      interface{}
 	CommandIndex int
+    CommandTerm int
+    Snapshot []byte
 }
 
 type LogEntry struct {
@@ -108,11 +110,13 @@ func (rf *Raft) GetState() (int, bool) {
 	return term, isleader
 }
 
-func (rf *Raft) CompactLog(snapshot []data) {
+func (rf *Raft) CompactLog(snapshot []byte, lastIndex int) {
     
     rf.mu.Lock()
     defer rf.mu.Unlock()
     defer DPrintf("[server: %v]Compact log done\n", rf.me)
+
+    rf.logs = rf[lastIndex + 1:]
     buffer := new(bytes.Buffer)
     e      := labgob.NewEncoder(buffer)
     e.Encode(rf.currentTerm)
@@ -907,7 +911,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         applyMsg := ApplyMsg {
                             CommandValid: true,
                             Command:      rf.logs[rf.lastApplied].Command,
-                            CommandIndex: rf.lastApplied}
+                            CommandIndex: rf.lastApplied,
+                            CommandTerm:  rf.logs[rf.lastApplied].LogTerm,
+                            Snapshot:     nil}
                         DPrintf("[server: %v]send committed log to service: %v\n", rf.me, applyMsg)
                         rf.mu.Unlock()
                         applyCh <- applyMsg
