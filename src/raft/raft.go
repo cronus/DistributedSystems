@@ -126,11 +126,11 @@ func (rf *Raft) v2p(vIndex int) (int, pstn) {
     }
 }
 
-func (rf *Raft) p2v(pIndex int) (int, bool) {
+func (rf *Raft) p2v(pIndex int) int {
     if pIndex > len(rf.logs) - 1 {
         panic("p2v: physical address greater than max log index\n")
     } else {
-        return pIndex + rf.lastIncludedIndex + 1, true
+        return pIndex + rf.lastIncludedIndex + 1
     }
 }
 
@@ -478,7 +478,8 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
                 mismatchTerm := rf.logs[pPrevLogIndex].LogTerm
                 for i := len(rf.logs[ : pFirstTermIndex]) - 1; i >= 0; i-- {
-                    if i > rf.v2p(rf.commitIndex) {
+                    pCommitIndex, _ := rf.v2p(rf.commitIndex)
+                    if i > pCommitIndex {
                         if rf.logs[i].LogTerm != mismatchTerm {
                             pFirstTermIndex = i + 1
                             reply.FirstTermIndex = rf.p2v(pFirstTermIndex)
@@ -523,17 +524,17 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     // 4. append any new entries not already in the log
     if len(args.Entries) == 0 {
         DPrintf("[server: %v]received heartbeat\n", rf.me)
-    } else if len(rf.logs) == args.PrevLogIndex + 1 {
+    } else if len(rf.logs) == pPrevLogIndex + 1 {
         for i, entry := range args.Entries {
-            rf.logs = append(rf.logs[:rf.v2p(args.PrevLogIndex) + i + 1], entry)
+            rf.logs = append(rf.logs[:pPrevLogIndex + i + 1], entry)
         }
         // persist only when possible committed data
         // for leader, it's easy to determine
         // persist follower whenever update
         rf.persist()
-    } else if len(rf.logs) - 1 > rf.v2p(args.PrevLogIndex) && len(rf.logs) - 1 < rf.v2p(args.PrevLogIndex) + len(args.Entries) {
-        for i := len(rf.logs); i <= rf.v2p(args.PrevLogIndex) + len(args.Entries); i++ {
-            rf.logs = append(rf.logs[:i], args.Entries[i - rf.v2p(args.PrevLogIndex) - 1]) 
+    } else if len(rf.logs) - 1 > pPrevLogIndex && len(rf.logs) - 1 < pPrevLogIndex + len(args.Entries) {
+        for i := len(rf.logs); i <= pPrevLogIndex + len(args.Entries); i++ {
+            rf.logs = append(rf.logs[:i], args.Entries[i - pPrevLogIndex - 1]) 
         }
         // persist only when possible committed data
         // for leader, it's easy to determine
@@ -977,7 +978,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                     }
                                     if reply.Term <= rf.currentTerm {
                                         pPrevLogIndex, pstn := rf.v2p(reply.FirstTermIndex - 1)
-                                        if pstn = GT || pstn == EQ {
+                                        if pstn == GT || pstn == EQ {
                                             rf.nextIndex[server] = reply.FirstTermIndex 
                                         } else {
                                             // InstallSnapshot RPC
@@ -1075,7 +1076,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 firstTermIndex = detectAppendEntriesArgs.PrevLogIndex + 1
                                                 break
                                             }
-                                            pPrevLogIndex, pstn = rf.p2v(FirstTermIndex - 1)
+                                            pPrevLogIndex, pstn = rf.v2p(detectReply.FirstTermIndex - 1)
                                             if pstn == GT || pstn == EQ {
                                                 rf.nextIndex[server] = detectReply.FirstTermIndex 
                                             } else {
@@ -1117,7 +1118,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         }
                                         DPrintf("[server: %v]Consistency check: server: %v, firstTermIndex: %v", rf.me, server, firstTermIndex)
                                         
-                                        pPrevLogIndex, pstn := rf.v2p(firstTermIndex - 1)
+                                        pPrevLogIndex, pstn = rf.v2p(firstTermIndex - 1)
                                         forceAppendEntriesArgs := &AppendEntriesArgs{
                                             Term         : rf.currentTerm,
                                             LeaderId     : rf.me,
@@ -1216,7 +1217,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     // find the max matchIndex committed
                     // paper 5.4.2, only log entries from the leader's current term are committed by counting replicas
                     for index, matchNum := range matchIndexCntr {
-                        if matchNum > len(rf.peers) / 2 && index > rf.commitIndex && rf.logs[rf.v2p(index)].LogTerm == rf.currentTerm {
+                        pIndex, _ := rf.v2p(index)
+                        if matchNum > len(rf.peers) / 2 && index > rf.commitIndex && rf.logs[pIndex].LogTerm == rf.currentTerm {
                             rf.commitIndex = index
                         }
                     }
@@ -1227,9 +1229,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     DPrintf("[server: %v]lastApplied: %v, commitIndex: %v\n", rf.me, rf.lastApplied, rf.commitIndex);
                     for rf.lastApplied < rf.commitIndex {
                         rf.lastApplied++
+                        pLastApplied, _ := rf.v2p(rf.lastApplied)
                         applyMsg := ApplyMsg {
                             CommandValid: true,
-                            Command:      rf.logs[rf.v2p(rf.lastApplied)].Command,
+                            Command:      rf.logs[pLastApplied].Command,
                             CommandIndex: rf.lastApplied,
                             Snapshot:     nil}
                         DPrintf("[server: %v]send committed log to service: %v\n", rf.me, applyMsg)
