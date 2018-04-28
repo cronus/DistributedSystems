@@ -91,6 +91,7 @@ type Raft struct {
     t *time.Timer
     cond *sync.Cond
     shutdown chan struct{}
+    applyCh chan ApplyMsg
 
     // snapshot
     lastIncludedIndex int
@@ -120,15 +121,20 @@ func (rf *Raft) CompactLog(snapshotData []byte, lastIndex int) {
     DPrintf("[server: %v]Compact lastIndex: %v, logs: %v\n", rf.me, lastIndex, rf.logs)
     defer rf.mu.Unlock()
 
+    rf.persistSnapshot(snapshotData, lastIndex)
+}
+
+func (rf *Raft) persistSnapshot(data []byte, lastIndex int) {
+
     rf.lastIncludedTerm  = rf.logs[lastIndex - rf.lastIncludedIndex - 1].LogTerm
     rf.lastIncludedIndex = lastIndex
-    rf.snapshotData      = snapshotData
+    rf.snapshotData      = data
 
     // discard logs
     rf.logs = rf.logs[lastIndex - rf.lastIncludedIndex:]
 
     // encode metadata for snapshot
-    buffer := bytes.NewBuffer(snapshotData)
+    buffer := bytes.NewBuffer(data)
     e      := labgob.NewEncoder(buffer)
     e.Encode(rf.lastIncludedIndex)
     e.Encode(rf.lastIncludedTerm)
@@ -149,9 +155,6 @@ func (rf *Raft) CompactLog(snapshotData []byte, lastIndex int) {
     // store snapshot in the persister object with 
     // corresponding raft state
     rf.persister.SaveStateAndSnapshot(state, snapshot)
-}
-
-func (rf *Raft) persistSnapshot(data []byte) {
 
 }
 
@@ -160,8 +163,8 @@ func (rf *Raft) readSnapshot(data []byte) {
 		return
 	}
 
-    rf.mu.Lock()
-    defer rf.mu.Unlock()
+    //rf.mu.Lock()
+    //defer rf.mu.Unlock()
 
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
@@ -517,7 +520,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 
     // 4. Reply and wait for more data chunks if done is false (omit)
     // 5. Save snapshot file, discard any existing or partitial snapshot with smaller index
-    //persist
+    rf.persistSnapshot(args.data, args.lastIncludedIndex)
 
     // 6. If existing log entry has same index and term as snapshot's last 
     //    included entry, retain log entries following it and reply
@@ -535,16 +538,17 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
     rf.logs = rf.logs[:0]
 
     // 8. Reset state machine usingsnapshot content (and load snapshot's cluster configuration)
-    //snapshotApplyMsg := ApplyMsg{
-    //    CommandValid: false,
-    //    Command:      nil,
-    //    CommandIndex: 0,
-    //    Snapshot:     args.data}
+    snapshotApplyMsg := ApplyMsg{
+        CommandValid: false,
+        Command:      nil,
+        CommandIndex: 0,
+        Snapshot:     args.data}
 
+    rf.applyCh <- snapshotApplyMsg
 
 }
 
-func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotArgs) bool {
+func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
 	ok := rf.peers[server].Call("Raft.InstallSnapshot", args, reply)
 	return ok
 }
@@ -699,6 +703,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
     rf.state    = "Follower"
     rf.cond     = sync.NewCond(&rf.mu)
     rf.shutdown = make(chan struct{})
+    rf.applyCh  = applyCh
 
     // snapshot metadata
     rf.lastIncludedIndex = -1
@@ -824,13 +829,23 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     DPrintf("[server: %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
                     for server, _ := range peers {
                         if server != rf.me {
-                            appendEntriesArgs[server] = &AppendEntriesArgs{
-                                Term         : rf.currentTerm,
-                                LeaderId     : rf.me,
-                                PrevLogIndex : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
-                                PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
-                                Entries      : nil,
-                                LeaderCommit : rf.commitIndex}
+                            if  rf.nextIndex[server] - 1 >= rf.lastIncludedIndex + 1 {
+                                appendEntriesArgs[server] = &AppendEntriesArgs{
+                                    Term         : rf.currentTerm,
+                                    LeaderId     : rf.me,
+                                    PrevLogIndex : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
+                                    PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
+                                    Entries      : nil,
+                                    LeaderCommit : rf.commitIndex}
+                            } else {
+                                appendEntriesArgs[server] = &AppendEntriesArgs{
+                                    Term         : rf.currentTerm,
+                                    LeaderId     : rf.me,
+                                    PrevLogIndex : rf.lastIncludedIndex,
+                                    PrevLogTerm  : rf.lastIncludedTerm,
+                                    Entries      : nil,
+                                    LeaderCommit : rf.commitIndex}
+                            }
 
                             appendEntriesReply[server] = new(AppendEntriesReply)
                             go func(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
@@ -862,7 +877,44 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         return
                                     }
                                     if reply.Term <= rf.currentTerm {
-                                        rf.nextIndex[server] = reply.FirstTermIndex 
+                                        if rf.lastIncludedIndex + 1 <= reply.FirstTermIndex - 1 {
+                                            rf.nextIndex[server] = reply.FirstTermIndex 
+                                        } else {
+                                            // InstallSnapshot RPC
+                                            installSnapshotArgs  := &InstallSnapshotArgs {
+                                                Term              : rf.currentTerm,
+                                                LeaderId          : rf.me,
+                                                lastIncludedIndex : rf.lastIncludedIndex,
+                                                lastIncludedTerm  : rf.lastIncludedTerm,
+                                                data              : rf.snapshotData}
+                                            
+                                            installSnapshotReply := new(InstallSnapshotReply)
+                                            ok3 := rf.sendInstallSnapshot(server, installSnapshotArgs, installSnapshotReply)
+
+                                            // handle reply
+                                            if !ok3 {
+                                                DPrintf("[server: %v]ok3, InstallSnapshot not receive from %v\n", rf.me, server)
+                                                return
+                                            }
+                                            if args.Term != rf.currentTerm {
+                                                rf.mu.Unlock()
+                                            }
+                                            if installSnapshotReply.Term > rf.currentTerm {
+                                                rf.state = "Follower"
+                                                rf.currentTerm = installSnapshotReply.Term
+
+                                                // reset timer 
+                                                if !rf.t.Stop() {
+                                                    DPrintf("[server: %v]Leader change to follower3: drain timer\n", rf.me)
+                                                    <- rf.t.C
+                                                }
+                                                timeout := time.Duration(500 + rand.Int31n(400))
+                                                rf.t.Reset(timeout * time.Millisecond)
+
+                                                rf.mu.Unlock()
+                                            }
+                                            return
+                                        }
                                         for {
                                             //rf.nextIndex[server]--
                                             DPrintf("abc:%v, server: %v reply: %v\n", rf, server, reply)
@@ -906,7 +958,44 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 firstTermIndex = detectAppendEntriesArgs.PrevLogIndex + 1
                                                 break
                                             }
-                                            rf.nextIndex[server] = detectReply.FirstTermIndex 
+                                            if rf.lastIncludedIndex + 1 <= reply.FirstTermIndex - 1 {
+                                                rf.nextIndex[server] = detectReply.FirstTermIndex 
+                                            } else {
+                                                // send InstallSnapshot RPC
+                                                installSnapshotArgs  := &InstallSnapshotArgs {
+                                                    Term              : rf.currentTerm,
+                                                    LeaderId          : rf.me,
+                                                    lastIncludedIndex : rf.lastIncludedIndex,
+                                                    lastIncludedTerm  : rf.lastIncludedTerm,
+                                                    data              : rf.snapshotData}
+                                                
+                                                installSnapshotReply := new(InstallSnapshotReply)
+                                                ok4 :=  rf.sendInstallSnapshot(server, installSnapshotArgs, installSnapshotReply)
+
+                                                // handle reply
+                                                if !ok4 {
+                                                    DPrintf("[server: %v]ok4, InstallSnapshot not receive from %v\n", rf.me, server)
+                                                    return
+                                                }
+                                                if args.Term != rf.currentTerm {
+                                                    rf.mu.Unlock()
+                                                }
+                                                if installSnapshotReply.Term > rf.currentTerm {
+                                                    rf.state = "Follower"
+                                                    rf.currentTerm = detectReply.Term
+
+                                                    // reset timer 
+                                                    if !rf.t.Stop() {
+                                                        DPrintf("[server: %v]Leader change to follower4: drain timer\n", rf.me)
+                                                        <- rf.t.C
+                                                    }
+                                                    timeout := time.Duration(500 + rand.Int31n(400))
+                                                    rf.t.Reset(timeout * time.Millisecond)
+
+                                                    rf.mu.Unlock()
+                                                }
+                                                return
+                                            }
                                         }
                                         DPrintf("[server: %v]Consistency check: server: %v, firstTermIndex: %v", rf.me, server, firstTermIndex)
                                         forceAppendEntriesArgs := &AppendEntriesArgs{
