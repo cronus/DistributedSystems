@@ -402,7 +402,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// Your code here (2A, 2B).
     rf.mu.Lock()
     defer rf.mu.Unlock()
-    DPrintf("[server: %v]Term:%v, server log:%v lastApplied %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.logs, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
+    DPrintf("[server: %v]Term:%v, rf.lastIncludedIndex: %v, server log:%v lastApplied %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.lastIncludedIndex, rf.logs, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.Term    = rf.currentTerm
@@ -597,13 +597,23 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
         for server, _ := range rf.peers {
             if server != rf.me {
-                appendEntriesArgs[server] = &AppendEntriesArgs{
-                    Term          : rf.currentTerm,
-                    LeaderId      : rf.me,
-                    PrevLogIndex  : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
-                    PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
-                    Entries       : []LogEntry{*logEntry},
-                    LeaderCommit  : rf.commitIndex}
+                if rf.nextIndex[server] - 1 >= rf.lastIncludedIndex + 1 {
+                    appendEntriesArgs[server] = &AppendEntriesArgs{
+                        Term          : rf.currentTerm,
+                        LeaderId      : rf.me,
+                        PrevLogIndex  : rf.nextIndex[server] - 1,
+                        PrevLogTerm   : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
+                        Entries       : []LogEntry{*logEntry},
+                        LeaderCommit  : rf.commitIndex}
+                } else {
+                    appendEntriesArgs[server] = &AppendEntriesArgs{
+                        Term         : rf.currentTerm,
+                        LeaderId     : rf.me,
+                        PrevLogIndex : rf.lastIncludedIndex,
+                        PrevLogTerm  : rf.lastIncludedTerm,
+                        Entries      : nil,
+                        LeaderCommit : rf.commitIndex}
+                }
 
                 rf.nextIndex[server] += len(appendEntriesArgs[server].Entries)
                 DPrintf("leader:%v, nextIndex:%v\n", rf.me, rf.nextIndex)
@@ -833,7 +843,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 appendEntriesArgs[server] = &AppendEntriesArgs{
                                     Term         : rf.currentTerm,
                                     LeaderId     : rf.me,
-                                    PrevLogIndex : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
+                                    PrevLogIndex : rf.nextIndex[server] - 1,
                                     PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
                                     Entries      : nil,
                                     LeaderCommit : rf.commitIndex}
@@ -921,7 +931,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             detectAppendEntriesArgs := &AppendEntriesArgs{
                                                 Term         : rf.currentTerm,
                                                 LeaderId     : rf.me,
-                                                PrevLogIndex : rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1,
+                                                PrevLogIndex : rf.nextIndex[server] - 1,
                                                 PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
                                                 Entries      : nil,
                                                 LeaderCommit : rf.commitIndex}
