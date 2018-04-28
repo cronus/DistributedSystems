@@ -121,17 +121,19 @@ func (rf *Raft) CompactLog(snapshotData []byte, lastIndex int) {
     DPrintf("[server: %v]Compact lastIndex: %v, logs: %v\n", rf.me, lastIndex, rf.logs)
     defer rf.mu.Unlock()
 
-    rf.persistSnapshot(snapshotData, lastIndex)
+    rf.persistSnapshotAndState(snapshotData, lastIndex)
+    DPrintf("[server: %v] after compact, logs: %v\n", rf.me, rf.logs)
 }
 
-func (rf *Raft) persistSnapshot(data []byte, lastIndex int) {
+func (rf *Raft) persistSnapshotAndState(data []byte, lastIndex int) {
 
+    DPrintf("[server: %v] persist snapshot and state: lastIndex: %v, rf.lastIncludedIndex: %v, diff: %v\n", rf.me, lastIndex, rf.lastIncludedIndex, lastIndex - rf.lastIncludedIndex)
     rf.lastIncludedTerm  = rf.logs[lastIndex - rf.lastIncludedIndex - 1].LogTerm
+    // discard logs
+    rf.logs = rf.logs[lastIndex - rf.lastIncludedIndex : ]
+
     rf.lastIncludedIndex = lastIndex
     rf.snapshotData      = data
-
-    // discard logs
-    rf.logs = rf.logs[lastIndex - rf.lastIncludedIndex:]
 
     // encode metadata for snapshot
     buffer := bytes.NewBuffer(data)
@@ -402,7 +404,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// Your code here (2A, 2B).
     rf.mu.Lock()
     defer rf.mu.Unlock()
-    DPrintf("[server: %v]Term:%v, rf.lastIncludedIndex: %v, server log:%v lastApplied %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.lastIncludedIndex, rf.logs, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
+    DPrintf("[server: %v]AppendEntries, Term:%v, rf.lastIncludedIndex: %v, server log:%v lastApplied %v, commitIndex: %v, received AppendEntries, %v, arg term: %v, arg log len:%v", rf.me, rf.currentTerm, rf.lastIncludedIndex, rf.logs, rf.lastApplied, rf.commitIndex, args, args.Term, len(args.Entries))
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
         reply.Term    = rf.currentTerm
@@ -417,40 +419,68 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
     }
     timeout := time.Duration(500 + rand.Int31n(400))
     rf.t.Reset(timeout * time.Millisecond)
-    if len(rf.logs) <= args.PrevLogIndex  {
+
+
     // 2. false if log doesn't contain an entry at prevLogIndex whose term matches prevLogTerm
+    if args.PrevLogIndex - rf.lastIncludedIndex - 1 >= len(rf.logs) {
         DPrintf("[server: %v] log doesn't contain PrevLogIndex\n", rf.me)
         reply.Term = rf.currentTerm
-        reply.FirstTermIndex = len(rf.logs)
+        reply.FirstTermIndex = len(rf.logs) + rf.lastIncludedIndex + 1
         reply.Success = false
         rf.currentTerm = args.Term
         return
-    } else if rf.logs[args.PrevLogIndex - rf.lastIncludedIndex - 1].LogTerm != args.PrevLogTerm {
-    // 3. if an existing entry conflicts with a new one (same index but diff terms), 
-    //    delete the existing entry and all that follows it 
-        //rf.logs = rf.logs[:args.PrevLogIndex]
-        DPrintf("[server: %v] log contains PrevLogIndex, but term doesn't match\n", rf.me)
-        reply.FirstTermIndex = args.PrevLogIndex
-        for rf.logs[reply.FirstTermIndex - rf.lastIncludedIndex - 1].LogTerm == rf.logs[reply.FirstTermIndex - 1 - rf.lastIncludedIndex - 1].LogTerm {
-            if reply.FirstTermIndex > rf.commitIndex {
-                reply.FirstTermIndex--
-            } else {
-                reply.FirstTermIndex = rf.commitIndex + 1
-                break
+    } else if args.PrevLogIndex -rf.lastIncludedIndex - 1 < 0 {
+        // only snapshot, no entry in logs
+        DPrintf("[server: %v]only snapshot in follower, check -1: %v\n", rf.me, args.PrevLogIndex - rf.lastIncludedIndex - 1)
+         
+    } else { // 0 <= args.PrevLogIndex - rf.lastIncludedIndex - 1 < len(rf.logs)
+        // 3. if an existing entry conflicts with a new one (same index but diff terms), 
+        //    delete the existing entry and all that follows it 
+        if rf.logs[args.PrevLogIndex - rf.lastIncludedIndex - 1].LogTerm != args.PrevLogTerm {
+            DPrintf("[server: %v] log contains PrevLogIndex, but term doesn't match\n", rf.me)
+            reply.FirstTermIndex = args.PrevLogIndex
+
+            mismatchTerm := rf.logs[args.PrevLogIndex - rf.lastIncludedIndex - 1].LogTerm
+            for i := len(rf.logs[ : reply.FirstTermIndex - rf.lastIncludedIndex - 1]) - 1; i >= 0; i-- {
+                if i + rf.lastIncludedIndex + 1 > rf.commitIndex {
+                    if rf.logs[i].LogTerm != mismatchTerm {
+                        reply.FirstTermIndex = i + 1 + rf.lastIncludedIndex + 1
+                        break
+                    } else {
+                        if i == 0 {
+                            DPrintf("[server: %v]FirstTermInde is rf.lastIncludedIndex: %v\n", rf.me, rf.lastIncludedIndex)
+                            reply.FirstTermIndex = rf.lastIncludedIndex
+                            break
+                        }
+                    }
+                } else {
+                    reply.FirstTermIndex = rf.commitIndex + 1
+                    break
+                }
             }
             DPrintf("[server: %v]FirstTermIndex: %v\n", rf.me, reply.FirstTermIndex)
+
+            //for rf.logs[reply.FirstTermIndex - rf.lastIncludedIndex - 1].LogTerm == rf.logs[reply.FirstTermIndex - 1 - rf.lastIncludedIndex - 1].LogTerm {
+            //    if reply.FirstTermIndex > rf.commitIndex {
+            //        reply.FirstTermIndex--
+            //    } else {
+            //        reply.FirstTermIndex = rf.commitIndex + 1
+            //        break
+            //    }
+            //}
+
+            rf.logs = rf.logs[:reply.FirstTermIndex - rf.lastIncludedIndex - 1]
+            reply.Term    = rf.currentTerm
+            reply.Success = false
+            rf.currentTerm = args.Term
+            return
         }
-        rf.logs = rf.logs[:reply.FirstTermIndex - rf.lastIncludedIndex - 1]
-        reply.Term    = rf.currentTerm
-        reply.Success = false
-        rf.currentTerm = args.Term
-        return
     }
 
     // 4. append any new entries not already in the log
     if len(args.Entries) == 0 {
         DPrintf("[server: %v]received heartbeat\n", rf.me)
-    } else if len(rf.logs) == args.PrevLogIndex + 1{
+    } else if len(rf.logs) == args.PrevLogIndex + 1 {
         for i, entry := range args.Entries {
             rf.logs = append(rf.logs[:args.PrevLogIndex + i + 1 - rf.lastIncludedIndex - 1], entry)
         }
@@ -493,9 +523,9 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *Ap
 type InstallSnapshotArgs struct{
     Term              int
     LeaderId          int
-    lastIncludedIndex int
-    lastIncludedTerm  int
-    data              []byte
+    LastIncludedIndex int
+    LastIncludedTerm  int
+    Data              []byte
 }
 
 type InstallSnapshotReply struct{
@@ -506,7 +536,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 
     rf.mu.Lock()
     defer rf.mu.Unlock()
-    DPrintf("[server: %v]InstallSnapshot\n", rf.me)
+    DPrintf("[server: %v]InstallSnapshot. Term: %v, args: %v\n", rf.me, rf.currentTerm, args)
 
     // 1. Reply immediately if term < currentTerm
     if args.Term < rf.currentTerm {
@@ -520,19 +550,19 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 
     // 4. Reply and wait for more data chunks if done is false (omit)
     // 5. Save snapshot file, discard any existing or partitial snapshot with smaller index
-    rf.persistSnapshot(args.data, args.lastIncludedIndex)
+    rf.persistSnapshotAndState(args.Data, args.LastIncludedIndex)
 
     // 6. If existing log entry has same index and term as snapshot's last 
     //    included entry, retain log entries following it and reply
-    if len(rf.logs) + rf.lastIncludedIndex + 1 > args.lastIncludedIndex && rf.logs[args.lastIncludedIndex - rf.lastIncludedIndex - 1].LogTerm == args.lastIncludedIndex {
-        rf.logs = rf.logs[args.lastIncludedIndex + 1:]
+    if len(rf.logs) + rf.lastIncludedIndex + 1 > args.LastIncludedIndex && rf.logs[args.LastIncludedIndex - rf.lastIncludedIndex - 1].LogTerm == args.LastIncludedIndex {
+        rf.logs = rf.logs[args.LastIncludedIndex + 1:]
         return
     }
 
     // 2.&3. Write data into snapshot file 
-    rf.lastIncludedIndex = args.lastIncludedIndex
-    rf.lastIncludedTerm  = args.lastIncludedTerm
-    rf.snapshotData      = args.data
+    rf.lastIncludedIndex = args.LastIncludedIndex
+    rf.lastIncludedTerm  = args.LastIncludedTerm
+    rf.snapshotData      = args.Data
 
     // 7. Discard the entire log
     rf.logs = rf.logs[:0]
@@ -542,7 +572,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
         CommandValid: false,
         Command:      nil,
         CommandIndex: 0,
-        Snapshot:     args.data}
+        Snapshot:     args.Data}
 
     rf.applyCh <- snapshotApplyMsg
 
@@ -839,7 +869,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     DPrintf("[server: %v]Leader, send heartbeat, period: %v\n", rf.me, period*time.Millisecond);
                     for server, _ := range peers {
                         if server != rf.me {
-                            if  rf.nextIndex[server] - 1 >= rf.lastIncludedIndex + 1 {
+                            if  rf.nextIndex[server] - 1  - rf.lastIncludedIndex - 1 >= 0 {
                                 appendEntriesArgs[server] = &AppendEntriesArgs{
                                     Term         : rf.currentTerm,
                                     LeaderId     : rf.me,
@@ -847,7 +877,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                     PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
                                     Entries      : nil,
                                     LeaderCommit : rf.commitIndex}
-                            } else {
+                            } else { // -1
                                 appendEntriesArgs[server] = &AppendEntriesArgs{
                                     Term         : rf.currentTerm,
                                     LeaderId     : rf.me,
@@ -887,16 +917,16 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         return
                                     }
                                     if reply.Term <= rf.currentTerm {
-                                        if rf.lastIncludedIndex + 1 <= reply.FirstTermIndex - 1 {
+                                        if reply.FirstTermIndex - 1 - rf.lastIncludedIndex -1 >= -1 {
                                             rf.nextIndex[server] = reply.FirstTermIndex 
                                         } else {
                                             // InstallSnapshot RPC
                                             installSnapshotArgs  := &InstallSnapshotArgs {
                                                 Term              : rf.currentTerm,
                                                 LeaderId          : rf.me,
-                                                lastIncludedIndex : rf.lastIncludedIndex,
-                                                lastIncludedTerm  : rf.lastIncludedTerm,
-                                                data              : rf.snapshotData}
+                                                LastIncludedIndex : rf.lastIncludedIndex,
+                                                LastIncludedTerm  : rf.lastIncludedTerm,
+                                                Data              : rf.snapshotData}
                                             
                                             installSnapshotReply := new(InstallSnapshotReply)
                                             ok3 := rf.sendInstallSnapshot(server, installSnapshotArgs, installSnapshotReply)
@@ -928,20 +958,33 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         for {
                                             //rf.nextIndex[server]--
                                             DPrintf("abc:%v, server: %v reply: %v\n", rf, server, reply)
-                                            detectAppendEntriesArgs := &AppendEntriesArgs{
-                                                Term         : rf.currentTerm,
-                                                LeaderId     : rf.me,
-                                                PrevLogIndex : rf.nextIndex[server] - 1,
-                                                PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
-                                                Entries      : nil,
-                                                LeaderCommit : rf.commitIndex}
+
+                                            detectAppendEntriesArgs := new(AppendEntriesArgs)
+                                            if rf.nextIndex[server] - 1 - rf.lastIncludedIndex -1 >= 0 {
+                                                detectAppendEntriesArgs = &AppendEntriesArgs{
+                                                    Term         : rf.currentTerm,
+                                                    LeaderId     : rf.me,
+                                                    PrevLogIndex : rf.nextIndex[server] - 1,
+                                                    PrevLogTerm  : rf.logs[rf.nextIndex[server] - 1 - rf.lastIncludedIndex - 1].LogTerm,
+                                                    Entries      : nil,
+                                                    LeaderCommit : rf.commitIndex}
+                                            } else {  // -1
+                                                detectAppendEntriesArgs = &AppendEntriesArgs{
+                                                    Term         : rf.currentTerm,
+                                                    LeaderId     : rf.me,
+                                                    PrevLogIndex : rf.lastIncludedIndex,
+                                                    PrevLogTerm  : rf.lastIncludedTerm,
+                                                    Entries      : nil,
+                                                    LeaderCommit : rf.commitIndex}
+                                            }
+
                                             rf.mu.Unlock()
                                             detectReply := new(AppendEntriesReply)
                                             ok1 := rf.sendAppendEntries(server, detectAppendEntriesArgs, detectReply)
                                             rf.mu.Lock()
                                             if !ok1 {
                                                 DPrintf("[server: %v]not receive from %v\n", rf.me, server)
-                                                rf.nextIndex[server] = len(rf.logs)
+                                                rf.nextIndex[server] = len(rf.logs) + rf.lastIncludedIndex + 1
                                                 rf.mu.Unlock()
                                                 return
                                             }
@@ -968,16 +1011,16 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 firstTermIndex = detectAppendEntriesArgs.PrevLogIndex + 1
                                                 break
                                             }
-                                            if rf.lastIncludedIndex + 1 <= reply.FirstTermIndex - 1 {
+                                            if reply.FirstTermIndex - 1 - rf.lastIncludedIndex - 1 >= -1 {
                                                 rf.nextIndex[server] = detectReply.FirstTermIndex 
                                             } else {
                                                 // send InstallSnapshot RPC
                                                 installSnapshotArgs  := &InstallSnapshotArgs {
                                                     Term              : rf.currentTerm,
                                                     LeaderId          : rf.me,
-                                                    lastIncludedIndex : rf.lastIncludedIndex,
-                                                    lastIncludedTerm  : rf.lastIncludedTerm,
-                                                    data              : rf.snapshotData}
+                                                    LastIncludedIndex : rf.lastIncludedIndex,
+                                                    LastIncludedTerm  : rf.lastIncludedTerm,
+                                                    Data              : rf.snapshotData}
                                                 
                                                 installSnapshotReply := new(InstallSnapshotReply)
                                                 ok4 :=  rf.sendInstallSnapshot(server, installSnapshotArgs, installSnapshotReply)
@@ -1008,6 +1051,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             }
                                         }
                                         DPrintf("[server: %v]Consistency check: server: %v, firstTermIndex: %v", rf.me, server, firstTermIndex)
+
                                         forceAppendEntriesArgs := &AppendEntriesArgs{
                                             Term         : rf.currentTerm,
                                             LeaderId     : rf.me,
@@ -1041,7 +1085,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 return
                                             } else {
                                                 DPrintf("[server: %v]successfully append entries: %v\n", rf.me, forceReply)
-                                                rf.nextIndex[server]  = len(rf.logs) 
+                                                rf.nextIndex[server]  = len(rf.logs) + rf.lastIncludedIndex + 1
                                                 rf.matchIndex[server] = forceAppendEntriesArgs.PrevLogIndex + len(forceAppendEntriesArgs.Entries)
                                                 rf.mu.Unlock()
                                                 rf.cond.Broadcast()
@@ -1049,7 +1093,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             }
                                         } else {
                                             DPrintf("[server: %v]no reponse from %v\n", rf.me, server)
-                                            rf.nextIndex[server]  = len(rf.logs)
+                                            rf.nextIndex[server]  = len(rf.logs) + rf.lastIncludedIndex + 1
                                         }
                                     } else {
                                         rf.state = "Follower"
