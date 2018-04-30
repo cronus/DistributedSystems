@@ -390,12 +390,15 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
                     // tell it to discard logs and persist snapshot and remaining log
                     kv.rf.CompactLog(snapshot, msg.CommandIndex)
                 }
+                kv.mu.Unlock()
             } else {
+                kv.mu.Lock()
                 // InstallSnapshot RPC
+                DPrintf("[kvserver: %v]build state from InstallSnapShot: %v\n", kv.me, msg.Snapshot)
                 kv.buildState(msg.Snapshot)
+                kv.mu.Unlock()
             }
 
-            kv.mu.Unlock()
         }
     }(kv, persister)
 
@@ -449,22 +452,20 @@ func (kv *KVServer) buildState(data []byte) {
         return
     }
 
-    kv.mu.Lock()
-    defer kv.mu.Unlock()
+    //kv.mu.Lock()
+    //defer kv.mu.Unlock()
 
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
 
-    var lastIndex int
-    var lastTerm int
-    if err := d.Decode(&lastIndex); err != nil {
-        panic(err)
-    }
-    if err := d.Decode(&lastTerm); err != nil {
-        panic(err)
-    }
     if err := d.Decode(&kv.kvStore); err != nil {
         panic(err)
     }
-    DPrintf("[kvserver: %v]After build kvServer state: last index: %v, last term: %v, kvstore: %v\n", kv.me, kv.kvStore)
+    //if err := d.Decode(&lastIndex); err != nil {
+    //    panic(err)
+    //}
+    //if err := d.Decode(&lastTerm); err != nil {
+    //    panic(err)
+    //}
+    DPrintf("[kvserver: %v]After build kvServer state: kvstore: %v\n", kv.me, kv.kvStore)
 }
