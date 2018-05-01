@@ -3,9 +3,9 @@ rm -rf a
 for iter in {1..100}
 do
     echo "Iteration" ${iter} | tee -a a
-    go test -run 3A 2>./log/a_${iter} |tee -a a
-    if grep -q "history is not linearizable" a; then
-        echo "Found not linearizable case"
+    go test 2>./log/a_${iter} |tee -a a
+    if grep -q "FAIL" a; then
+        echo "Found failed case"
         exit
     fi
 done

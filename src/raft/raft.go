@@ -229,7 +229,7 @@ func (rf *Raft) readSnapshot(data []byte) {
         panic(err)
     }
     bufferKv := new(bytes.Buffer)
-    eKv      := labgob.NewEncoder(buffer)
+    eKv      := labgob.NewEncoder(bufferKv)
     eKv.Encode(kvStore)
     eKv.Encode(receivedCmd)
     rf.snapshotData = bufferKv.Bytes()
