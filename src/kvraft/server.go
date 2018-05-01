@@ -297,7 +297,7 @@ func (kv *KVServer) Kill() {
 
     // Wait for a while for servers to shutdown, since
     // shutdown isn't a real crash and isn't instantaneous
-    time.Sleep(10 * time.Millisecond)
+    time.Sleep(50 * time.Millisecond)
     kv.mu.Lock()
     defer kv.mu.Unlock()
     close(kv.applyCh)
