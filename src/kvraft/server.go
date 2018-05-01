@@ -43,12 +43,10 @@ type KVServer struct {
 	// Your definitions here.
     isLeader bool
     bufferTerm int
-    receivedCmd map[int64]int
 
     // persist when snapshot
     kvStore map[string]string
-    //lastIndex int
-    //lastTerm int
+    receivedCmd map[int64]int
 
     // need to initial when becoming Leader
     initialIndex int
@@ -381,14 +379,15 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
                 // kv server should restore the snapshot from the persister when it restarts
                 if kv.maxraftstate != -1 && persister.RaftStateSize() > kv.maxraftstate {
                     // snapshot
-                    buffer := new(bytes.Buffer)
-                    e      := labgob.NewEncoder(buffer)
+                    buffer       := new(bytes.Buffer)
+                    e            := labgob.NewEncoder(buffer)
                     e.Encode(kv.kvStore)
-                    snapshot := buffer.Bytes()
+                    e.Encode(kv.receivedCmd)
+                    snapshotData := buffer.Bytes()
 
                     // send snapshot to raft 
                     // tell it to discard logs and persist snapshot and remaining log
-                    kv.rf.CompactLog(snapshot, msg.CommandIndex)
+                    kv.rf.CompactLog(snapshotData, msg.CommandIndex)
                 }
                 kv.mu.Unlock()
             } else {
@@ -458,14 +457,24 @@ func (kv *KVServer) buildState(data []byte) {
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
 
-    if err := d.Decode(&kv.kvStore); err != nil {
-        panic(err)
-    }
+    //var lastIndex int
+    //var lastTerm int
     //if err := d.Decode(&lastIndex); err != nil {
     //    panic(err)
     //}
     //if err := d.Decode(&lastTerm); err != nil {
     //    panic(err)
     //}
+
+    if err := d.Decode(&kv.kvStore); err != nil {
+        panic(err)
+    }
+
+    // restore receivedCmd
+    if err := d.Decode(&kv.receivedCmd); err != nil {
+        panic(err)
+    }
+
+
     DPrintf("[kvserver: %v]After build kvServer state: kvstore: %v\n", kv.me, kv.kvStore)
 }

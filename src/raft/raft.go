@@ -101,7 +101,7 @@ type Raft struct {
 
 const NULL = -1
 
-type pstn string
+type Pstn string
 const (
     GT = "GT"
     EQ = "EQ"
@@ -109,7 +109,7 @@ const (
 )
 
 
-func (rf *Raft) v2p(vIndex int) (int, pstn) {
+func (rf *Raft) v2p(vIndex int) (int, Pstn) {
     
     // check virtual index
     if vIndex - rf.lastIncludedIndex - 1 > len(rf.logs) - 1 {
@@ -183,8 +183,8 @@ func (rf *Raft) persistSnapshotAndState(data []byte, lastIndex int, lastTerm int
     rf.snapshotData      = data
 
     // encode metadata for snapshot
-    buffer := bytes.NewBuffer(data)
-    e      := labgob.NewEncoder(buffer)
+    buffer   := bytes.NewBuffer(data)
+    e        := labgob.NewEncoder(buffer)
     e.Encode(rf.lastIncludedIndex)
     e.Encode(rf.lastIncludedTerm)
     snapshot := buffer.Bytes()
@@ -215,16 +215,35 @@ func (rf *Raft) readSnapshot(data []byte) {
     //rf.mu.Lock()
     //defer rf.mu.Unlock()
 
+    kvStore     := make(map[string]string)
+    receivedCmd := make(map[int]int)
+
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
 
-    if err := d.Decode(rf.lastIncludedIndex); err != nil {
+    // decode kvStore and encode into bytes
+    if err := d.Decode(&kvStore); err != nil {
         panic(err)
     }
-    if err := d.Decode(rf.lastIncludedTerm); err != nil {
+    if err := d.Decode(&receivedCmd); err != nil {
         panic(err)
     }
-    rf.snapshotData = buffer.Bytes()
+    bufferKv := new(bytes.Buffer)
+    eKv      := labgob.NewEncoder(buffer)
+    eKv.Encode(kvStore)
+    eKv.Encode(receivedCmd)
+    rf.snapshotData = bufferKv.Bytes()
+
+    // decode lastIncludededIndex and lastIncludedTerm
+    if err := d.Decode(&rf.lastIncludedIndex); err != nil {
+        panic(err)
+    }
+    if err := d.Decode(&rf.lastIncludedTerm); err != nil {
+        panic(err)
+    }
+    rf.logs = rf.logs[:0]
+    rf.commitIndex = rf.lastIncludedIndex
+    rf.lastApplied = rf.lastIncludedIndex
 }
 
 //
@@ -577,7 +596,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
     // 5. if leadercommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
     if args.LeaderCommit > rf.commitIndex {
-        if args.LeaderCommit < len(rf.logs) - 1 {
+        if args.LeaderCommit < rf.p2v(len(rf.logs) - 1) {
             rf.commitIndex = args.LeaderCommit
         } else {
             rf.commitIndex = rf.p2v(len(rf.logs) - 1)
@@ -1015,10 +1034,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         rf.mu.Unlock()
                                         return
                                     }
+                                    var pPrevLogIndex int
+                                    var vPrevLogIndex int
+                                    var pstn Pstn
                                     if reply.Term <= rf.currentTerm {
-                                        pPrevLogIndex, pstn := rf.v2p(reply.FirstTermIndex - 1)
+                                        pPrevLogIndex, pstn = rf.v2p(reply.FirstTermIndex - 1)
                                         if pstn == GT || pstn == EQ {
-                                            rf.nextIndex[server] = reply.FirstTermIndex 
+                                            vPrevLogIndex = reply.FirstTermIndex - 1
                                         } else {
                                             // InstallSnapshot RPC
                                             installSnapshotArgs  := &InstallSnapshotArgs {
@@ -1065,13 +1087,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             //rf.nextIndex[server]--
                                             DPrintf("abc:%v, server: %v reply: %v\n", rf, server, reply)
 
-                                            pPrevLogIndex, pstn := rf.v2p(rf.nextIndex[server] - 1)
+                                            //pPrevLogIndex, pstn = rf.v2p(rf.nextIndex[server] - 1)
                                             detectAppendEntriesArgs := new(AppendEntriesArgs)
                                             if pstn == GT {
                                                 detectAppendEntriesArgs = &AppendEntriesArgs{
                                                     Term         : rf.currentTerm,
                                                     LeaderId     : rf.me,
-                                                    PrevLogIndex : rf.nextIndex[server] - 1,
+                                                    PrevLogIndex : vPrevLogIndex,
                                                     PrevLogTerm  : rf.logs[pPrevLogIndex].LogTerm,
                                                     Entries      : nil,
                                                     LeaderCommit : rf.commitIndex}
@@ -1094,7 +1116,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             rf.mu.Lock()
                                             if !ok1 {
                                                 DPrintf("[server: %v]not receive from %v\n", rf.me, server)
-                                                rf.nextIndex[server] = rf.p2v(len(rf.logs) - 1) + 1
+                                                //rf.nextIndex[server] = rf.p2v(len(rf.logs) - 1) + 1
                                                 rf.mu.Unlock()
                                                 return
                                             }
@@ -1123,7 +1145,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             }
                                             pPrevLogIndex, pstn = rf.v2p(detectReply.FirstTermIndex - 1)
                                             if pstn == GT || pstn == EQ {
-                                                rf.nextIndex[server] = detectReply.FirstTermIndex 
+                                                vPrevLogIndex = detectReply.FirstTermIndex - 1
                                             } else {
                                                 DPrintf("[server: %v]Leader send InstallSnapshot\n", rf.me)
                                                 // send InstallSnapshot RPC
@@ -1214,7 +1236,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 rf.mu.Unlock()
                                                 return
                                             } else {
-                                                rf.nextIndex[server]  = rf.p2v(len(rf.logs) - 1) + 1
+                                                //rf.nextIndex[server]  = rf.p2v(len(rf.logs) - 1) + 1
                                                 rf.matchIndex[server] = forceAppendEntriesArgs.PrevLogIndex + len(forceAppendEntriesArgs.Entries)
                                                 DPrintf("[server: %v]successfully append entries: %v, rf.nextIndex: %v\n", rf.me, forceReply, rf.nextIndex)
                                                 rf.mu.Unlock()
@@ -1223,7 +1245,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                             }
                                         } else {
                                             DPrintf("[server: %v]no reponse from %v\n", rf.me, server)
-                                            rf.nextIndex[server]  = rf.p2v(len(rf.logs) - 1) + 1
+                                            //rf.nextIndex[server]  = rf.p2v(len(rf.logs) - 1) + 1
                                         }
                                     } else {
                                         rf.state = "Follower"
@@ -1293,6 +1315,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                     for rf.lastApplied < rf.commitIndex {
                         rf.lastApplied++
                         pLastApplied, _ := rf.v2p(rf.lastApplied)
+                        // TODO update index scheme
+                        if rf.logs[pLastApplied].Command == nil {
+                            continue
+                        }
                         applyMsg := ApplyMsg {
                             CommandValid: true,
                             Command:      rf.logs[pLastApplied].Command,
@@ -1318,9 +1344,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
     }(rf, applyCh)
 
 
+    rf.readSnapshot(persister.ReadSnapshot())
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
-    rf.readSnapshot(persister.ReadSnapshot())
 
 
 	return rf
