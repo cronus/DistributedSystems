@@ -234,16 +234,20 @@ func (rf *Raft) readSnapshot(data []byte) {
     eKv.Encode(receivedCmd)
     rf.snapshotData = bufferKv.Bytes()
 
+    var lastIncludedIndex int
+    var lastIncludedTerm int
     // decode lastIncludededIndex and lastIncludedTerm
-    if err := d.Decode(&rf.lastIncludedIndex); err != nil {
+    if err := d.Decode(&lastIncludedIndex); err != nil {
         panic(err)
     }
-    if err := d.Decode(&rf.lastIncludedTerm); err != nil {
+    if err := d.Decode(&lastIncludedTerm); err != nil {
         panic(err)
     }
     rf.logs = rf.logs[:0]
-    rf.commitIndex = rf.lastIncludedIndex
-    rf.lastApplied = rf.lastIncludedIndex
+    rf.lastIncludedIndex = lastIncludedIndex
+    rf.lastIncludedTerm  = lastIncludedTerm
+    rf.commitIndex       = rf.lastIncludedIndex
+    rf.lastApplied       = rf.lastIncludedIndex
 }
 
 //
@@ -269,8 +273,9 @@ func (rf *Raft) persist() {
     e      := labgob.NewEncoder(buffer)
     e.Encode(rf.currentTerm)
     e.Encode(rf.votedFor)
-    for i, b := range rf.logs {
-        if i == 0 {
+    for _, b := range rf.logs {
+        // TODO update index scheme
+        if b.Command == nil {
             continue
         }
         //if i > rf.commitIndex {
