@@ -390,7 +390,16 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         reply.VoteGranted  = false
     } else if args.Term > rf.currentTerm {
         rf.votedFor = NULL
-        //rf.currentTerm    = args.Term
+        // need to update follower's term if received candidate RequestVote RPC
+        // scenario:
+        // [0, 1, 2, 3, 4] all commit to 10, leader 1, term 1
+        // [0, 2, 4], no leader, term:1 [1, 3] term: 1
+        // [0, 2, 4], leader 0, term:1, use heartbeat to update term [1, 3] term: 1
+        // [0] disconnect without sending any heartbeat, [0] term2, [2, 4] term: 1, [1, 3] term:1
+        // [0] leader: 0, term: 2, [1, 2, 3, 4] leader:1, term: 1
+        // after transaction, [0] still commit to 10, [1, 2, 3, 4] commit to 20
+        // [0] rejoin, will become leader, which is not expected
+        rf.currentTerm    = args.Term
         rf.state          = "Follower"
     }
 
