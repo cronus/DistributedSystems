@@ -21,8 +21,42 @@ type ShardMaster struct {
 
 type Op struct {
 	// Your data here.
+    Name string
+
 }
 
+func (sm *ShardMaster) handleCmd(command Op) {
+
+    DPrintf("[smserver: %v]Handle command: %v", sm.me, Op)
+    switch Op.Name {
+    case "Join":
+        // creating a new configuration that includes the new replica groups.
+        // The new configuration should divide the shards as evenly as possible
+        // among the full set of groups, and should move as few shards as possible 
+        // Note: should allow re-use of a GID if it's not part of the current configuration
+
+    case "Leave":
+        // creating a new configuration that dows not include those groups
+        // assign those groups' shards to the remaining groups
+        // The new configuration should divide the shards as evenly as possible
+        // among the full set of groups, and should move as few shards as possible 
+
+    case "Move":
+        // creating a new configuration in which the shard is assigned to the group
+
+    case "Query":
+        // replying with configuration that has the queried number
+        // if the number is -1 or bigger than the biggest known configuration number,
+        // the shardmaster should reply with the latest configuration.
+        // The result of Query(-1) should reflect every Join, Leave or Move RPC that 
+        // the shardmaster finished handling before it recevied the Query(-1) RPC
+
+    default:
+        panic("Unknown Command!")
+    }
+
+    
+}
 
 func (sm *ShardMaster) Join(args *JoinArgs, reply *JoinReply) {
 	// Your code here.
