@@ -361,20 +361,18 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
                     // duplicated command detection
                     if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
                         DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, op)
-                        kv.cond.Broadcast()
-                        kv.mu.Unlock()
-                        continue
-                    } 
-                    kv.receivedCmd[op.ClerkId] = op.CommandNum
-                    DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
+                    } else {
+                        kv.receivedCmd[op.ClerkId] = op.CommandNum
+                        DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
 
-                    switch op.Type {
-                    case "Put":
-                        kv.kvStore[op.Key] = op.Value
-                    case "Append":
-                        kv.kvStore[op.Key] += op.Value
+                        switch op.Type {
+                        case "Put":
+                            kv.kvStore[op.Key] = op.Value
+                        case "Append":
+                            kv.kvStore[op.Key] += op.Value
+                        }
+                        DPrintf("[kvserver: %v]kvStore: %v", kv.me, kv.kvStore)
                     }
-                    DPrintf("[kvserver: %v]kvStore: %v", kv.me, kv.kvStore)
                     kv.cond.Broadcast()
 
                     // detect when the persisted Raft state grows too large
