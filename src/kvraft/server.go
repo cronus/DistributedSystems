@@ -300,7 +300,7 @@ func (kv *KVServer) Kill() {
     time.Sleep(50 * time.Millisecond)
     kv.mu.Lock()
     defer kv.mu.Unlock()
-    close(kv.applyCh)
+    //close(kv.applyCh)
     close(kv.shutdown)
     DPrintf("[kvserver: %v]Kill kv server\n", kv.me)
 }
@@ -347,57 +347,61 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 
     go func(kv *KVServer, persister *raft.Persister) {
         for msg := range kv.applyCh {
-            if msg.CommandValid { 
-                kv.mu.Lock()
-                if kv.initialIndex <= msg.CommandIndex {
-                    kv.msgBuffer = append(kv.msgBuffer, msg)
-                }
-                op := msg.Command.(Op)
+            select {
+            case <- kv.shutdown:
+                return
+            default:
+                if msg.CommandValid { 
+                    kv.mu.Lock()
+                    if kv.initialIndex <= msg.CommandIndex {
+                        kv.msgBuffer = append(kv.msgBuffer, msg)
+                    }
+                    op := msg.Command.(Op)
 
-                // duplicated command detection
-                if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
-                    DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, op)
+                    // duplicated command detection
+                    if num, ok := kv.receivedCmd[op.ClerkId]; ok && num == op.CommandNum {
+                        DPrintf("[kvserver: %v]PutAppend, command %v is already committed.\n", kv.me, op)
+                        kv.cond.Broadcast()
+                        kv.mu.Unlock()
+                        continue
+                    } 
+                    kv.receivedCmd[op.ClerkId] = op.CommandNum
+                    DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
+
+                    switch op.Type {
+                    case "Put":
+                        kv.kvStore[op.Key] = op.Value
+                    case "Append":
+                        kv.kvStore[op.Key] += op.Value
+                    }
+                    DPrintf("[kvserver: %v]kvStore: %v", kv.me, kv.kvStore)
                     kv.cond.Broadcast()
+
+                    // detect when the persisted Raft state grows too large
+                    // hand a snapshot and tells Raft that it can discard old log entires
+                    // Raft should save with persist.SaveStateAndSnapshot()
+                    // kv server should restore the snapshot from the persister when it restarts
+                    if kv.maxraftstate != -1 && persister.RaftStateSize() > kv.maxraftstate {
+                        // snapshot
+                        buffer       := new(bytes.Buffer)
+                        e            := labgob.NewEncoder(buffer)
+                        e.Encode(kv.kvStore)
+                        e.Encode(kv.receivedCmd)
+                        snapshotData := buffer.Bytes()
+
+                        // send snapshot to raft 
+                        // tell it to discard logs and persist snapshot and remaining log
+                        kv.rf.CompactLog(snapshotData, msg.CommandIndex)
+                    }
                     kv.mu.Unlock()
-                    continue
-                } 
-                kv.receivedCmd[op.ClerkId] = op.CommandNum
-                DPrintf("[kvserver: %v]Receive applyMsg from raft: %v\n", kv.me, msg)
-
-                switch op.Type {
-                case "Put":
-                    kv.kvStore[op.Key] = op.Value
-                case "Append":
-                    kv.kvStore[op.Key] += op.Value
+                } else {
+                    kv.mu.Lock()
+                    // InstallSnapshot RPC
+                    DPrintf("[kvserver: %v]build state from InstallSnapShot: %v\n", kv.me, msg.Snapshot)
+                    kv.buildState(msg.Snapshot)
+                    kv.mu.Unlock()
                 }
-                DPrintf("[kvserver: %v]kvStore: %v", kv.me, kv.kvStore)
-                kv.cond.Broadcast()
-
-                // detect when the persisted Raft state grows too large
-                // hand a snapshot and tells Raft that it can discard old log entires
-                // Raft should save with persist.SaveStateAndSnapshot()
-                // kv server should restore the snapshot from the persister when it restarts
-                if kv.maxraftstate != -1 && persister.RaftStateSize() > kv.maxraftstate {
-                    // snapshot
-                    buffer       := new(bytes.Buffer)
-                    e            := labgob.NewEncoder(buffer)
-                    e.Encode(kv.kvStore)
-                    e.Encode(kv.receivedCmd)
-                    snapshotData := buffer.Bytes()
-
-                    // send snapshot to raft 
-                    // tell it to discard logs and persist snapshot and remaining log
-                    kv.rf.CompactLog(snapshotData, msg.CommandIndex)
-                }
-                kv.mu.Unlock()
-            } else {
-                kv.mu.Lock()
-                // InstallSnapshot RPC
-                DPrintf("[kvserver: %v]build state from InstallSnapShot: %v\n", kv.me, msg.Snapshot)
-                kv.buildState(msg.Snapshot)
-                kv.mu.Unlock()
             }
-
         }
     }(kv, persister)
 
