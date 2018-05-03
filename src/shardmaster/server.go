@@ -16,6 +16,12 @@ type ShardMaster struct {
 	// Your data here.
 
 	configs []Config // indexed by config num
+
+
+    rcvdCmd map[int64]int
+
+
+    shutdown chan interface{}
 }
 
 
@@ -25,37 +31,57 @@ type Op struct {
 
 }
 
+func (sm *ShardMaster) dispatchCmd(name string, args interface{}) {
+    DPrintf("[smserver: %v]%v, args: %v\n", sm.me, name, args)
+}
+
 func (sm *ShardMaster) handleCmd(command Op) {
 
-    DPrintf("[smserver: %v]Handle command: %v", sm.me, Op)
-    switch Op.Name {
-    case "Join":
-        // creating a new configuration that includes the new replica groups.
-        // The new configuration should divide the shards as evenly as possible
-        // among the full set of groups, and should move as few shards as possible 
-        // Note: should allow re-use of a GID if it's not part of the current configuration
+    DPrintf("[smserver: %v]Handle command: %v", sm.me, command)
 
-    case "Leave":
-        // creating a new configuration that dows not include those groups
-        // assign those groups' shards to the remaining groups
-        // The new configuration should divide the shards as evenly as possible
-        // among the full set of groups, and should move as few shards as possible 
+    // duplicated command detection
+    if num, ok := sm.rcvdCmd[command.Args.ClerkId]; ok && num == command.Args.CommandNum {
+        DPrintf("[smserver: %v]%v, command %v is already committed.\n", sm.me, command.Name, command)
+    } else {
+        switch Op.Name {
+        case "Join":
+            // creating a new configuration that includes the new replica groups.
+            // The new configuration should divide the shards as evenly as possible
+            // among the full set of groups, and should move as few shards as possible 
+            // Note: should allow re-use of a GID if it's not part of the current configuration
 
-    case "Move":
-        // creating a new configuration in which the shard is assigned to the group
+            config := make(Config)
 
-    case "Query":
-        // replying with configuration that has the queried number
-        // if the number is -1 or bigger than the biggest known configuration number,
-        // the shardmaster should reply with the latest configuration.
-        // The result of Query(-1) should reflect every Join, Leave or Move RPC that 
-        // the shardmaster finished handling before it recevied the Query(-1) RPC
+        case "Leave":
+            // creating a new configuration that dows not include those groups
+            // assign those groups' shards to the remaining groups
+            // The new configuration should divide the shards as evenly as possible
+            // among the full set of groups, and should move as few shards as possible 
 
-    default:
-        panic("Unknown Command!")
+        case "Move":
+            // creating a new configuration in which the shard is assigned to the group
+
+        case "Query":
+            // replying with configuration that has the queried number
+            // if the number is -1 or bigger than the biggest known configuration number,
+            // the shardmaster should reply with the latest configuration.
+            // The result of Query(-1) should reflect every Join, Leave or Move RPC that 
+            // the shardmaster finished handling before it recevied the Query(-1) RPC
+
+        default:
+            panic("Unknown Command!")
+        }
     }
 
     
+}
+
+func (sm *KVServer) buildState(data []byte) {
+    if data == nil || len(data) < 1 {
+        return
+    }
+
+    DPrintf("[svserver: %v]\n", sm.me)
 }
 
 func (sm *ShardMaster) Join(args *JoinArgs, reply *JoinReply) {
@@ -84,6 +110,13 @@ func (sm *ShardMaster) Query(args *QueryArgs, reply *QueryReply) {
 func (sm *ShardMaster) Kill() {
 	sm.rf.Kill()
 	// Your code here, if desired.
+
+    sm.mu.Lock()
+    defer sm.mu.Unlock()
+
+    close(sm.shutdown)
+
+    DPrintf("[smserver: %v]Kill sm server\n", sm.me)
 }
 
 // needed by shardkv tester
@@ -109,6 +142,27 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister)
 	sm.rf = raft.Make(servers, me, persister, sm.applyCh)
 
 	// Your code here.
+
+    go func(sm *SMServer, persist *raft.Persister) {
+        for msg := range sm.applyCh {
+            select {
+            case <- sm.shutdown:
+                return
+            default:
+                if msg.CommandValid {
+                    sm.mu.Lock()
+                    sm.handleCmd()
+                    sm.mu.Unlock()
+                } else {
+                    sm.mu.Lock()
+                    // InstallSnapshot RPC
+                    DPrintf("[kvserver: %v]build state from InstallSnapShot: %v\n", sm.me, msg.Snapshot)
+                    sm.buildState(msg.Snapshot)
+                    sm.mu.Unlock()
+                }
+            }
+        }
+    }
 
 	return sm
 }
