@@ -17,7 +17,9 @@ type ShardMaster struct {
 
 	configs []Config // indexed by config num
 
+    cmdChBuffer []chan bool
 
+    // map for duplicated command detection
     rcvdCmd map[int64]int
 
 
@@ -28,16 +30,25 @@ type ShardMaster struct {
 type Op struct {
 	// Your data here.
     Name string
-
+    Args interface{}
 }
 
-func (sm *ShardMaster) dispatchCmd(name string, args interface{}) {
+func (sm *ShardMaster) feedCmd(name string, args interface{}) bool {
     DPrintf("[smserver: %v]%v, args: %v\n", sm.me, name, args)
+
+    op := Op{
+        Name   : name,
+        Args   : args}
+
+    index, term, isLeader := sm.rf.Start(op)
+
+    return isLeader
+
 }
 
-func (sm *ShardMaster) handleCmd(command Op) {
+func (sm *ShardMaster) applyCmd(command Op) {
 
-    DPrintf("[smserver: %v]Handle command: %v", sm.me, command)
+    DPrintf("[smserver: %v]Apply command: %v", sm.me, command)
 
     // duplicated command detection
     if num, ok := sm.rcvdCmd[command.Args.ClerkId]; ok && num == command.Args.CommandNum {
@@ -50,7 +61,32 @@ func (sm *ShardMaster) handleCmd(command Op) {
             // among the full set of groups, and should move as few shards as possible 
             // Note: should allow re-use of a GID if it's not part of the current configuration
 
-            config := make(Config)
+            // init
+            newGroups := make(map[int][]string)
+            for gid, ss := range command.Args.Groups {
+                newGroups[gid] = ss
+            }
+            newShards := sm.configs[len(sm.configs) - 1].Shards
+
+            // check GID is not used
+            // add the new GID to Groups
+            for gid, ss := range command.Args.Servers {
+                if _, ok := Op.Args.Groups[k]; ok{
+                    panic("Join: current state contains gid")
+                } else {
+                    newGroups[gid] = ss
+                }
+            }
+
+            // TODO re-allocate shards
+
+            // create a new config, append to configs
+            newConfig := Config {
+                Num    : len(sm.configs),
+                Shards : newShards,
+                Groups : newGroups}
+            }
+            configs = append(configs, newConfig)
 
         case "Leave":
             // creating a new configuration that dows not include those groups
@@ -58,8 +94,48 @@ func (sm *ShardMaster) handleCmd(command Op) {
             // The new configuration should divide the shards as evenly as possible
             // among the full set of groups, and should move as few shards as possible 
 
+            // init
+            newGroups := make(map[int][]string)
+            for gid, ss := range Op.Args.Groups {
+                newGroups[gid] = ss
+            }
+            newShards := sm.configs[len(sm.configs) - 1].Shards
+
+            // delete the Leave groups
+            for _, gid := range command.Args.GIDs {
+                delete(newGroup, gid)
+            }
+
+            // TODO re-allocate shards
+            
+            // create a new config, append to config
+            newConfig = Config{
+                Num    : len(sm.configs),
+                Shards : newShards,
+                Groups : newGroup}
+
+            configs = append(configs, newConfig)
+
         case "Move":
             // creating a new configuration in which the shard is assigned to the group
+
+            // init
+            newGroups := make(map[int][]string)
+            for gid, ss := range command.Args.Groups {
+                newGroups[gid] = ss
+            }
+            newShards := sm.configs[len(sm.configs) - 1].Shards
+
+            // shards is assigned to the group
+            newShards[Shard] = GID
+
+            // create a new config, append to config
+            newConfig = Config{
+                Num    : len(sm.configs),
+                Shards : newShards,
+                Groups : newGroup}
+                
+            configs = append(configs, newConfig)
 
         case "Query":
             // replying with configuration that has the queried number
@@ -68,36 +144,50 @@ func (sm *ShardMaster) handleCmd(command Op) {
             // The result of Query(-1) should reflect every Join, Leave or Move RPC that 
             // the shardmaster finished handling before it recevied the Query(-1) RPC
 
+            if command.Args.Num == -1 or command.Args.Num > len(sm.configs) - 1 {
+                qCfgIndex = len(sm.config) - 1
+            } else {
+                qCfgIndex = command.Args.Num
+            }
+
+            sm.configs[qCfgIndex]
+
         default:
             panic("Unknown Command!")
         }
     }
-
-    
-}
-
-func (sm *KVServer) buildState(data []byte) {
-    if data == nil || len(data) < 1 {
-        return
-    }
-
-    DPrintf("[svserver: %v]\n", sm.me)
 }
 
 func (sm *ShardMaster) Join(args *JoinArgs, reply *JoinReply) {
 	// Your code here.
+    sm.mu.Lock()
+    feedCmd("Join", args)
+    sm.mu.Unlock()
+    <- sm.cmdChBuffer[0]
+    // handle reply
+
+
 }
 
 func (sm *ShardMaster) Leave(args *LeaveArgs, reply *LeaveReply) {
 	// Your code here.
+    sm.mu.Lock()
+    defer sm.mu.Unlock()
+
 }
 
 func (sm *ShardMaster) Move(args *MoveArgs, reply *MoveReply) {
 	// Your code here.
+    sm.mu.Lock()
+    defer sm.mu.Unlock()
+
 }
 
 func (sm *ShardMaster) Query(args *QueryArgs, reply *QueryReply) {
 	// Your code here.
+    sm.mu.Lock()
+    defer sm.mu.Unlock()
+
 }
 
 
@@ -143,23 +233,24 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister)
 
 	// Your code here.
 
-    go func(sm *SMServer, persist *raft.Persister) {
+    // The very first configuration should be numbered zero
+    // all shards should be assigned go GID 0
+    // although the default values are satisfied, set explicitly
+    sm.configs[0].Num = 0
+    for _, shard := range sm.config[0].Shards {
+        shard = 0
+    }
+    
+
+    go func(sm *SMServer) {
         for msg := range sm.applyCh {
             select {
             case <- sm.shutdown:
                 return
             default:
-                if msg.CommandValid {
-                    sm.mu.Lock()
-                    sm.handleCmd()
-                    sm.mu.Unlock()
-                } else {
-                    sm.mu.Lock()
-                    // InstallSnapshot RPC
-                    DPrintf("[kvserver: %v]build state from InstallSnapShot: %v\n", sm.me, msg.Snapshot)
-                    sm.buildState(msg.Snapshot)
-                    sm.mu.Unlock()
-                }
+                sm.mu.Lock()
+                sm.applyCmd()
+                sm.mu.Unlock()
             }
         }
     }
