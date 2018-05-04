@@ -40,6 +40,9 @@ type ShardKV struct {
 
 	// Your definitions here.
 
+    mck *shardmaster.Clerk
+    currentConfig shardmaster.Config
+
     // persist when snapshot
     kvStore map[string]string
     rcvdCmd map[int64]int
@@ -333,7 +336,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     kv.shutdown        = make(chan struct{})
 
 	// Use something like this to talk to the shardmaster:
-	// kv.mck = shardmaster.MakeClerk(kv.masters)
+	kv.mck = shardmaster.MakeClerk(kv.masters)
 
 	kv.applyCh = make(chan raft.ApplyMsg)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
@@ -352,6 +355,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                     op := msg.Command.(Op)
                     kv.applyCmd(op)
                     kv.checkLogSize(persister, applyIndex)
+
                     // drain the rfState channel if not empty
                     if len(kv.rfStateChBuffer) > 0  && kv.initialIndex <= applyIndex {
                         applyTerm, applyIsLeader := kv.rf.GetState()
@@ -376,6 +380,25 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
         }
     }(kv)
 
+    // poll config
+    go func(kv *ShardKV) {
+        for {
+            select {
+            case <-kv.shutdown:
+                return
+            default:
+                // try each known server.
+		        for _, srv := range kv.masters {
+			        var reply QueryReply
+			        ok := srv.Call("ShardMaster.Query", args, &reply)
+			        if ok && reply.WrongLeader == false {
+				        kv.currentConfig = reply.Config
+			        }
+                }
+		        time.Sleep(100 * time.Millisecond)
+		    }
+        }
+    }
 
 	return kv
 }
