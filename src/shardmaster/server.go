@@ -50,9 +50,7 @@ type rfState struct {
     isLeader bool
 }
 
-// function to feed command to raft, no need to initialize rfStateChBuffer
-// because every element fifo will be consumed point to point,
-// no matter leader status changed or not
+// function to feed command to raft
 func (sm *ShardMaster) feedCmd(name string, args interface{}) rfState {
 
     var clerkId    int64
