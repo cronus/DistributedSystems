@@ -30,7 +30,7 @@ type ShardMaster struct {
     rcvdCmd map[int64]int
     rfStateChBuffer []chan rfState // true: leader; false: non-leader
 
-    shutdown chan interface{}
+    shutdown chan struct{}
 }
 
 
@@ -52,10 +52,11 @@ type rfState struct {
 // because every element fifo will be consumed point to point,
 // no matter leader status changed or not
 func (sm *ShardMaster) feedCmd(name string, args interface{}) rfState {
-    DPrintf("[smserver: %v]%v, args: %v\n", sm.me, name, args)
 
     var clerkId    int64
     var commandNum int
+    var state rfState
+
     switch name {
     case "Join":
         a         := args.(JoinArgs)
@@ -85,11 +86,12 @@ func (sm *ShardMaster) feedCmd(name string, args interface{}) rfState {
 
     index, term, isLeader := sm.rf.Start(op)
 
-    state := rfState {
+    state = rfState {
         index    : index,
         term     : term,
         isLeader : isLeader}
 
+    defer DPrintf("[smserver: %v]%v, args: %v state: %v\n", sm.me, name, args, state)
     return state
 
 }
@@ -99,6 +101,7 @@ func (sm *ShardMaster) checkRfState(oldState rfState, newState rfState) bool {
     var sameState bool
 
     if oldState.index != newState.index {
+        DPrintf("[smserver: %v]oldState: %v, newState: %v", sm.me, oldState, newState)
         panic("index not equal!")
     } else if oldState.isLeader != newState.isLeader {
         DPrintf("[smserver: %v]not the leader\n", sm.me)
@@ -130,9 +133,11 @@ func (sm *ShardMaster) applyCmd(command Op) {
 
             // init
             args      := command.Args.(JoinArgs)
+            keys      := make([]int, 0)
             newGroups := make(map[int][]string)
             for gid, ss := range sm.configs[len(sm.configs) - 1].Groups {
                 newGroups[gid] = ss
+                keys = append(keys, gid)
             }
             newShards := sm.configs[len(sm.configs) - 1].Shards
 
@@ -143,10 +148,17 @@ func (sm *ShardMaster) applyCmd(command Op) {
                     panic("Join: current state contains gid")
                 } else {
                     newGroups[gid] = ss
+                    keys           = append(keys, gid)
                 }
             }
 
-            // TODO re-allocate shards
+            DPrintf("[smserver: %v]Join, keys of config.Group: %v\n", sm.me, keys)
+            // re-allocate shards, consistent hashing
+            // assume every group has 10 virtual node
+            for i, _ := range newShards {
+                gidIndex := i % len(keys) 
+                newShards[i] = keys[gidIndex]
+            }
 
             // create a new config, append to configs
             newConfig := Config {
@@ -164,6 +176,7 @@ func (sm *ShardMaster) applyCmd(command Op) {
 
             // init
             args      := command.Args.(LeaveArgs)
+            keys      := make([]int, 0)
             newGroups := make(map[int][]string)
             for gid, ss := range sm.configs[len(sm.configs) - 1].Groups {
                 newGroups[gid] = ss
@@ -172,10 +185,29 @@ func (sm *ShardMaster) applyCmd(command Op) {
 
             // delete the Leave groups
             for _, gid := range args.GIDs {
-                delete(newGroups, gid)
+                if _, ok := newGroups[gid]; ok {
+                    delete(newGroups, gid)
+                } else {
+                    panic("Leave: current state doesn't contain gid")
+                }
             }
 
-            // TODO re-allocate shards
+            DPrintf("[smserver: %v]Leave, keys of config.Group: %v\n", sm.me, keys)
+            for gid, _ := range newGroups {
+                keys = append(keys, gid)
+            }
+
+            // re-allocate shards
+            if len(keys) != 0 {
+                for i, _ := range newShards {
+                    gidIndex := i % len(keys) 
+                    newShards[i] = keys[gidIndex]
+                }
+            } else {
+                for i, _ := range newShards {
+                    newShards[i] = 0
+                }
+            }
             
             // create a new config, append to config
             newConfig := Config{
@@ -208,23 +240,8 @@ func (sm *ShardMaster) applyCmd(command Op) {
             sm.configs = append(sm.configs, newConfig)
 
         case "Query":
-            // replying with configuration that has the queried number
-            // if the number is -1 or bigger than the biggest known configuration number,
-            // the shardmaster should reply with the latest configuration.
-            // The result of Query(-1) should reflect every Join, Leave or Move RPC that 
-            // the shardmaster finished handling before it recevied the Query(-1) RPC
 
             // read command is handled at command function
-            //args := command.Args.(QueryArgs)
-            //var qCfgIndex int
-
-            //if args.Num == -1 || args.Num > len(sm.configs) - 1 {
-            //    qCfgIndex = len(sm.configs) - 1
-            //} else {
-            //    qCfgIndex = args.Num
-            //}
-
-            //sm.configs[qCfgIndex]
 
         default:
             panic("Unknown Command!")
@@ -235,7 +252,9 @@ func (sm *ShardMaster) applyCmd(command Op) {
 func (sm *ShardMaster) Join(args *JoinArgs, reply *JoinReply) {
 	// Your code here.
 
-    var rfStateCh chan rfState
+    defer DPrintf("[smserver: %v]Join args: %v, reply: %v\n", sm.me, args, reply)
+
+    rfStateCh := make(chan rfState)
 
     sm.mu.Lock()
     rfStateFeed := sm.feedCmd("Join", *args)
@@ -263,13 +282,14 @@ func (sm *ShardMaster) Join(args *JoinArgs, reply *JoinReply) {
         reply.Err = ErrLeaderChanged
     }
 
-    DPrintf("[smserver: %v]Join args: %v, reply: %v\n", sm.me, args, reply)
 }
 
 func (sm *ShardMaster) Leave(args *LeaveArgs, reply *LeaveReply) {
 	// Your code here.
 
-    var rfStateCh chan rfState
+    defer DPrintf("[smserver: %v]Leave args: %v, reply: %v\n", sm.me, args, reply)
+    
+    rfStateCh := make(chan rfState)
 
     sm.mu.Lock()
     rfStateFeed := sm.feedCmd("Leave", *args)
@@ -297,13 +317,14 @@ func (sm *ShardMaster) Leave(args *LeaveArgs, reply *LeaveReply) {
         reply.Err = ErrLeaderChanged
     }
 
-    DPrintf("[smserver: %v]Leave args: %v, reply: %v\n", sm.me, args, reply)
 }
 
 func (sm *ShardMaster) Move(args *MoveArgs, reply *MoveReply) {
 	// Your code here.
 
-    var rfStateCh chan rfState
+    DPrintf("[smserver: %v]Move args: %v, reply: %v\n", sm.me, args, reply)
+
+    rfStateCh := make(chan rfState)
 
     sm.mu.Lock()
     rfStateFeed := sm.feedCmd("Move", *args)
@@ -331,13 +352,14 @@ func (sm *ShardMaster) Move(args *MoveArgs, reply *MoveReply) {
         reply.Err = ErrLeaderChanged
     }
 
-    DPrintf("[smserver: %v]Move args: %v, reply: %v\n", sm.me, args, reply)
 }
 
 func (sm *ShardMaster) Query(args *QueryArgs, reply *QueryReply) {
 	// Your code here.
 
-    var rfStateCh chan rfState
+    defer DPrintf("[smserver: %v]Query args: %v, reply: %v\n", sm.me, args, reply)
+
+    rfStateCh := make(chan rfState)
 
     sm.mu.Lock()
     rfStateFeed := sm.feedCmd("Query", *args)
@@ -363,8 +385,14 @@ func (sm *ShardMaster) Query(args *QueryArgs, reply *QueryReply) {
         reply.Err = OK
     } else {
         reply.Err = ErrLeaderChanged
+        return
     }
 
+    // replying with configuration that has the queried number
+    // if the number is -1 or bigger than the biggest known configuration number,
+    // the shardmaster should reply with the latest configuration.
+    // The result of Query(-1) should reflect every Join, Leave or Move RPC that 
+    // the shardmaster finished handling before it recevied the Query(-1) RPC
     sm.mu.Lock()
     var qCfgIndex int
 
@@ -377,7 +405,6 @@ func (sm *ShardMaster) Query(args *QueryArgs, reply *QueryReply) {
     reply.Config = sm.configs[qCfgIndex]
     sm.mu.Unlock()
 
-    DPrintf("[smserver: %v]Query args: %v, reply: %v\n", sm.me, args, reply)
 }
 
 
@@ -438,7 +465,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister)
     }
 
     sm.rfStateChBuffer = make([]chan rfState, 0)
-    
+    sm.shutdown        = make(chan struct{})
 
     go func(sm *ShardMaster) {
         for msg := range sm.applyCh {
@@ -447,22 +474,22 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister)
                 return
             default:
                 var rfStateApplied rfState
+                var rfStateCh chan rfState
                 sm.mu.Lock()
                 op := msg.Command.(Op)
                 sm.applyCmd(op)
 
                 // drain the rfState channel if not empty
                 if len(sm.rfStateChBuffer) > 0 {
-                    DPrintf("[smserver: %v]drain the command to channel\n", sm.me)
                     applyTerm, applyIsLeader := sm.rf.GetState()
-                    applyIndex := msg.CommandIndex
+                    applyIndex               := msg.CommandIndex
                     rfStateApplied = rfState {
                         index    : applyIndex,
                         term     : applyTerm,
                         isLeader : applyIsLeader}
                     
-                    var rfStateCh chan rfState
                     rfStateCh, sm.rfStateChBuffer = sm.rfStateChBuffer[0], sm.rfStateChBuffer[1:]
+                    DPrintf("[smserver: %v]drain the command to channel, %v\n", sm.me, rfStateApplied)
                     rfStateCh <- rfStateApplied
                 }
                 sm.mu.Unlock()
