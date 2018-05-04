@@ -28,6 +28,8 @@ type ShardMaster struct {
 
     // map for duplicated command detection
     rcvdCmd map[int64]int
+
+    initialIndex int
     rfStateChBuffer []chan rfState // true: leader; false: non-leader
 
     shutdown chan struct{}
@@ -85,6 +87,10 @@ func (sm *ShardMaster) feedCmd(name string, args interface{}) rfState {
         CommandNum : commandNum}
 
     index, term, isLeader := sm.rf.Start(op)
+
+    if len(sm.rfStateChBuffer) == 0 {
+        sm.initialIndex = index
+    }
 
     state = rfState {
         index    : index,
@@ -464,6 +470,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister)
         sm.configs[0].Shards[i] = 0
     }
 
+    sm.initialIndex    = 0
     sm.rfStateChBuffer = make([]chan rfState, 0)
     sm.shutdown        = make(chan struct{})
 
@@ -479,10 +486,10 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister)
                 op := msg.Command.(Op)
                 sm.applyCmd(op)
 
+                applyIndex               := msg.CommandIndex
                 // drain the rfState channel if not empty
-                if len(sm.rfStateChBuffer) > 0 {
+                if len(sm.rfStateChBuffer) > 0  && sm.initialIndex <= applyIndex {
                     applyTerm, applyIsLeader := sm.rf.GetState()
-                    applyIndex               := msg.CommandIndex
                     rfStateApplied = rfState {
                         index    : applyIndex,
                         term     : applyTerm,
