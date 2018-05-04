@@ -1,13 +1,14 @@
 package shardkv
 
 
-// import "shardmaster"
+import "shardmaster"
 import "labrpc"
 import "raft"
 import "sync"
 import "labgob"
 import "log"
 import "bytes"
+import "time"
 
 const Debug = 1
 
@@ -387,18 +388,11 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
             case <-kv.shutdown:
                 return
             default:
-                // try each known server.
-		        for _, srv := range kv.masters {
-			        var reply QueryReply
-			        ok := srv.Call("ShardMaster.Query", args, &reply)
-			        if ok && reply.WrongLeader == false {
-				        kv.currentConfig = reply.Config
-			        }
-                }
+                kv.currentConfig = kv.mck.Query(-1)
 		        time.Sleep(100 * time.Millisecond)
 		    }
         }
-    }
+    }(kv)
 
 	return kv
 }
