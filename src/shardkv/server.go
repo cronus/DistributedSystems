@@ -190,6 +190,27 @@ func (kv *ShardKV) buildState(data []byte) {
     DPrintf("[kvserver: %v]After build kvServer state: kvstore: %v\n", kv.me, kv.kvStore)
 }
 
+func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmaster.Config) map[int][]string {
+
+    var diffs map[int][]string
+
+    if (oldConfig.Num > newConfig.Num) {
+        panic("old config number should not greater than new config number")
+    } else if oldConfig.Shards == newConfig.Shards {
+        diffs = nil
+    } else {
+        diffs    = make(map[int][]string)
+        for i := 0; i < shardmaster.NShards; i++ {
+            if kv.gid == oldConfig.Shards[i] && kv.gid != newConfig.Shards[i] {
+                targetGid := newConfig.Shards[i]
+                diffs[i] = newConfig.Groups[targetGid]
+            }
+        }
+    }
+
+    return diffs
+}
+
 func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
     defer DPrintf("[kvserver: %v]Get args: %v, reply: %v\n", kv.me, args, reply)
@@ -388,7 +409,14 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
             case <-kv.shutdown:
                 return
             default:
-                kv.currentConfig = kv.mck.Query(-1)
+                config := kv.mck.Query(-1)
+                diffs := kv.detectConfig(kv.currentConfig, config)
+                if diffs != nil {
+                    kv.mu.Lock()
+                    kv.currentConfig = config
+                    DPrintf("[kvserver: %v]polling master for config: %v", kv.me, kv.currentConfig)
+                    kv.mu.Unlock()
+                }
 		        time.Sleep(100 * time.Millisecond)
 		    }
         }
