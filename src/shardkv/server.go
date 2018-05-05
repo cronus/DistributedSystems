@@ -149,6 +149,8 @@ func (kv *ShardKV) applyCmd(command Op) {
                 kv.kvStore[args.Key] += args.Value
             }
 
+            // handle PutAppend from kvservers, send new shards
+
         case "Get":
         case "reconfig":
 
@@ -271,11 +273,7 @@ func (kv *ShardKV) reconfig(args *shardmaster.Config, sendMap map[int][]string, 
     kv.sendShards(sendMap)
 
     // waiting to receive
-    if !kv.rcvShards(rcvShardsList) {
-        kv.mu.Unlock()
-        DPrintf("[kvserver: %v @ %v]receive shards failure\n", kv.me, kv.gid)
-        return false
-    }
+    kv.rcvShards(rcvShardsList) 
     kv.mu.Unlock()
 
     return true
@@ -283,6 +281,12 @@ func (kv *ShardKV) reconfig(args *shardmaster.Config, sendMap map[int][]string, 
 
 // function to send shards to other groups
 func (kv *ShardKV) sendShards(sendMap map[int][]string) {
+
+    DPrintf("[kvserver: %v @ %v]sendShards: %v", kv.me, kv.gid, sendMap)
+    
+    if len(sendMap) == 0 {
+        return
+    }
 
     // find the keys related to the migration shards
     for key, _ := range kv.kvStore {
@@ -312,8 +316,18 @@ func (kv *ShardKV) sendShards(sendMap map[int][]string) {
 }
 
 // function to receive shards from other groups
-func (kv *ShardKV) rcvShards(rcvList []int) bool {
-    return false
+func (kv *ShardKV) rcvShards(rcvList []int) {
+    DPrintf("[kvserver: %v @ %v]rcvShards: %v", kv.me, kv.gid, rcvList)
+
+    if len(rcvList) == 0 {
+        return
+    }
+
+    for rcvlen := len(rcvList); rcvlen != 0 {
+        Wait()
+    }
+
+    return
 }
 
 func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
