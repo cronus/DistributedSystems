@@ -132,7 +132,7 @@ func (kv *ShardKV) checkRfState(oldState rfState, newState rfState) bool {
 
 func (kv *ShardKV) applyCmd(command Op) {
 
-    DPrintf("[kvserver: %v @ %v]Apply command: %v", kv.me, command, kv.gid)
+    DPrintf("[kvserver: %v @ %v]Apply command: %v", kv.me, kv.gid, command)
 
     // duplicated command detection
     if num, ok := kv.rcvdCmd[command.ClerkId]; ok && num == command.CommandNum {
@@ -268,11 +268,7 @@ func (kv *ShardKV) reconfig(args *shardmaster.Config, sendMap map[int][]string, 
 
     kv.mu.Lock()
     // send to other groups
-    if !kv.sendShards(sendMap) {
-        kv.mu.Unlock()
-        DPrintf("[kvserver: %v @ %v]send shards failure\n", kv.me, kv.gid)
-        return false
-    }
+    kv.sendShards(sendMap)
 
     // waiting to receive
     if !kv.rcvShards(rcvShardsList) {
@@ -286,7 +282,7 @@ func (kv *ShardKV) reconfig(args *shardmaster.Config, sendMap map[int][]string, 
 }
 
 // function to send shards to other groups
-func (kv *ShardKV) sendShards(sendMap map[int][]string) bool {
+func (kv *ShardKV) sendShards(sendMap map[int][]string) {
 
     // find the keys related to the migration shards
     for key, _ := range kv.kvStore {
@@ -305,7 +301,7 @@ func (kv *ShardKV) sendShards(sendMap map[int][]string) bool {
                 var reply PutAppendReply
                 ok := srv.Call("ShardKV.PutAppend", &args, &reply)
                 if ok && reply.WrongLeader == false && reply.Err == OK {
-                    return true
+                    return
                 }
                 if ok && reply.Err == ErrWrongGroup {
                     panic("unexpected ErrWrongGroup during reconfiguration")
@@ -313,9 +309,6 @@ func (kv *ShardKV) sendShards(sendMap map[int][]string) bool {
             }
         }
     }
-    
-
-    return false
 }
 
 // function to receive shards from other groups
@@ -330,12 +323,6 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     rfStateCh := make(chan rfState)
 
     kv.mu.Lock()
-    // check is key in the correct group
-    if !kv.isInGroup(args.Key) {
-        kv.mu.Unlock()
-        reply.Err = ErrWrongGroup
-        return
-    }
 
     // feed command to raft
     rfStateFeed := kv.feedCmd("Get", *args)
@@ -353,6 +340,12 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 
     rfStateApplied :=<- rfStateCh
     DPrintf("[kvserver: %v @ %v]Get, receive applied command\n", kv.me, kv.gid)
+
+    // check is key in the correct group
+    if !kv.isInGroup(args.Key) {
+        reply.Err = ErrWrongGroup
+        return
+    }
 
     // handle reply
     sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
@@ -381,12 +374,6 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     rfStateCh := make(chan rfState)
 
     kv.mu.Lock()
-    // check is key in the correct group
-    if !kv.isInGroup(args.Key) {
-        kv.mu.Unlock()
-        reply.Err = ErrWrongGroup
-        return
-    }
 
     // feed command to raft
     rfStateFeed := kv.feedCmd("PutAppend", *args)
@@ -405,6 +392,11 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     rfStateApplied :=<- rfStateCh
     DPrintf("[kvserver: %v @ %v]PutAppend, receive applied command\n", kv.me, kv.gid)
 
+    // check is key in the correct group
+    if !kv.isInGroup(args.Key) {
+        reply.Err = ErrWrongGroup
+        return
+    }
     // handle reply
     sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
 
