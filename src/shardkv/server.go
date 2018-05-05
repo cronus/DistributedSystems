@@ -61,6 +61,12 @@ type rfState struct {
     isLeader bool
 }
 
+// function to check key in group
+func (kv *ShardKV) isInGroup(key string) bool {
+    keyShardIndex := key2shard(key)
+    return kv.gid == kv.currentConfig.Shards[keyShardIndex]
+}
+
 // function to feed command to raft
 func (kv *ShardKV) feedCmd(name string, args interface{}) rfState {
 
@@ -77,6 +83,7 @@ func (kv *ShardKV) feedCmd(name string, args interface{}) rfState {
         a         := args.(PutAppendArgs)
         clerkId    = a.ClerkId
         commandNum = a.CommandNum
+    case "reconfig":
     default:
         panic("unexpected command!")
     }
@@ -143,6 +150,10 @@ func (kv *ShardKV) applyCmd(command Op) {
             }
 
         case "Get":
+        case "reconfig":
+
+            kv.currentConfig = command.Args.(shardmaster.Config)
+            DPrintf("[kvserver: %v]update config: %v", kv.me, kv.currentConfig)
         }
     }
 }
@@ -190,25 +201,110 @@ func (kv *ShardKV) buildState(data []byte) {
     DPrintf("[kvserver: %v]After build kvServer state: kvstore: %v\n", kv.me, kv.kvStore)
 }
 
-func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmaster.Config) map[int][]string {
+func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmaster.Config) (map[int][]string, []int) {
 
-    var diffs map[int][]string
+    var sendMap         map[int][]string
+    var rcvShardsList   []int
 
-    if (oldConfig.Num > newConfig.Num) {
+    if oldConfig.Num > newConfig.Num {
         panic("old config number should not greater than new config number")
     } else if oldConfig.Shards == newConfig.Shards {
-        diffs = nil
+        sendMap   = nil
+        rcvShardsList = nil
     } else {
-        diffs    = make(map[int][]string)
         for i := 0; i < shardmaster.NShards; i++ {
+            // send map
             if kv.gid == oldConfig.Shards[i] && kv.gid != newConfig.Shards[i] {
-                targetGid := newConfig.Shards[i]
-                diffs[i] = newConfig.Groups[targetGid]
+                if sendMap == nil {
+                    sendMap = make(map[int][]string)
+                }
+                targetGid  := newConfig.Shards[i]
+                sendMap[i] = newConfig.Groups[targetGid]
+            }
+
+            // receive slice
+            if kv.gid != oldConfig.Shards[i] && kv.gid == newConfig.Shards[i] {
+                if rcvShardsList == nil {
+                    rcvShardsList = make([]int, 0)
+                }
+                rcvShardsList = append(rcvShardsList, i)
             }
         }
     }
 
-    return diffs
+    return sendMap, rcvShardsList
+}
+
+// only leader can all this function to send reconfig to raft
+func (kv *ShardKV) reconfig(args *shardmaster.Config, sendMap map[int][]string, rcvShardsList []int) bool {
+
+    rfStateCh := make(chan rfState)
+    
+    // feed command to raft
+    rfStateFeed := kv.feedCmd("reconfig", *args)
+    if !rfStateFeed.isLeader {
+        return false
+    }
+
+    // add command channel to fifo
+    kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
+
+    rfStateApplied :=<- rfStateCh
+    DPrintf("[kvserver: %v]reconfig, receive applied command\n", kv.me)
+
+    sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
+
+    if !sameState {
+        return false
+    }
+
+    // send to other groups
+    if !kv.sendShards(sendMap) {
+        return false
+    }
+
+    // waiting to receive
+    if !kv.rcvShards(rcvShardsList) {
+        return false
+    }
+
+    return true
+}
+
+// function to send shards to other groups
+func (kv *ShardKV) sendShards(sendMap map[int][]string) bool {
+
+    // find the keys related to the migration shards
+    for key, _ := range kv.kvStore {
+
+        shard := key2shard(key)
+
+        if servers, ok := sendMap[shard]; ok {
+	        args := PutAppendArgs{}
+	        args.Key   = key
+	        args.Value = kv.kvStore[key]
+	        args.Op = "Put"
+            for si := 0; si < len(servers); si++ {
+                srv := kv.make_end(servers[si])
+                var reply PutAppendReply
+                ok := srv.Call("ShardKV.PutAppend", &args, &reply)
+                if ok && reply.WrongLeader == false && reply.Err == OK {
+                    return true
+                }
+                if ok && reply.Err == ErrWrongGroup {
+                    panic("unexpected ErrWrongGroup during reconfiguration")
+                }
+            }
+        }
+    }
+    
+
+    return false
+}
+
+// function to receive shards from other groups
+func (kv *ShardKV) rcvShards(rcvList []int) bool {
+    return false
 }
 
 func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
@@ -218,8 +314,15 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     rfStateCh := make(chan rfState)
 
     kv.mu.Lock()
-    rfStateFeed := kv.feedCmd("Get", *args)
+    // check is key in the correct group
+    if !kv.isInGroup(args.Key) {
+        kv.mu.Unlock()
+        reply.Err = ErrWrongGroup
+        return
+    }
 
+    // feed command to raft
+    rfStateFeed := kv.feedCmd("Get", *args)
     if !rfStateFeed.isLeader {
         reply.WrongLeader = true
         kv.mu.Unlock()
@@ -228,6 +331,7 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
         reply.WrongLeader = false
     }
 
+    // add command channel to fifo
     kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
     kv.mu.Unlock()
 
@@ -244,6 +348,7 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
         return
     }
 
+    // get value for read command
     if value, exist := kv.kvStore[args.Key]; exist {
         reply.Err   = OK
         reply.Value = value
@@ -260,8 +365,15 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     rfStateCh := make(chan rfState)
 
     kv.mu.Lock()
-    rfStateFeed := kv.feedCmd("PutAppend", *args)
+    // check is key in the correct group
+    if !kv.isInGroup(args.Key) {
+        kv.mu.Unlock()
+        reply.Err = ErrWrongGroup
+        return
+    }
 
+    // feed command to raft
+    rfStateFeed := kv.feedCmd("PutAppend", *args)
     if !rfStateFeed.isLeader {
         reply.WrongLeader = true
         kv.mu.Unlock()
@@ -270,6 +382,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
         reply.WrongLeader = false
     }
 
+    // add command channel to fifo
     kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
     kv.mu.Unlock()
 
@@ -348,6 +461,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // register different command args struct
     labgob.Register(GetArgs{})
     labgob.Register(PutAppendArgs{})
+    labgob.Register(shardmaster.Config{})
 
     // store in snapshot
     kv.rcvdCmd         = make(map[int64]int)
@@ -402,21 +516,38 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
         }
     }(kv)
 
-    // poll config
+    // TODO leader is responsible for polling config
     go func(kv *ShardKV) {
+        // initial kv.currentConfig
+        var initConfig shardmaster.Config
+        for initConfig = kv.mck.Query(-1); initConfig.Num == 0; {
+            initConfig = kv.mck.Query(-1)
+        }
+        DPrintf("[kvserver: %v]initialize config: %v\n", kv.me, initConfig)
+        kv.mu.Lock()
+        kv.currentConfig = initConfig
+        kv.mu.Unlock()
         for {
             select {
             case <-kv.shutdown:
                 return
             default:
                 config := kv.mck.Query(-1)
-                diffs := kv.detectConfig(kv.currentConfig, config)
-                if diffs != nil {
+                sendMap, rcvShardsList := kv.detectConfig(kv.currentConfig, config)
+
+                if sendMap != nil || rcvShardsList != nil {
+                    
                     kv.mu.Lock()
-                    kv.currentConfig = config
-                    DPrintf("[kvserver: %v]polling master for config: %v", kv.me, kv.currentConfig)
+                    // send reconfig to unerlying Raft
+                    isSucceed := kv.reconfig(&config, sendMap, rcvShardsList)
+
+                    if !isSucceed {
+                        panic("reconfig failed")
+                    }
+
                     kv.mu.Unlock()
                 }
+
 		        time.Sleep(100 * time.Millisecond)
 		    }
         }
