@@ -1,5 +1,7 @@
 package shardkv
 
+import "shardmaster"
+
 //
 // Sharded key/value server.
 // Lots of replica groups, each running op-at-a-time paxos.
@@ -47,4 +49,20 @@ type GetReply struct {
 	WrongLeader bool
 	Err         Err
 	Value       string
+}
+
+type reconfigArgs struct {
+    Config           shardmaster.Config
+    ExpectShardsList []int
+}
+
+type MigrateShardsArgs struct {
+    ShardsList []int
+    KVPairs    map[string]string
+    DupDtn     map[int64]int
+}
+
+type MigrateShardsReply struct {
+    WrongLeader bool
+    Err         Err
 }

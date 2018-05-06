@@ -128,6 +128,7 @@ func (sm *ShardMaster) applyCmd(command Op) {
     if num, ok := sm.rcvdCmd[command.ClerkId]; ok && num == command.CommandNum {
         DPrintf("[smserver: %v]%v, command %v is already committed.\n", sm.me, command.Name, command)
     } else {
+        sm.rcvdCmd[command.ClerkId] = command.CommandNum
         switch command.Name {
         case "Join":
             // creating a new configuration that includes the new replica groups.
@@ -459,6 +460,9 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister)
     labgob.Register(LeaveArgs{})
     labgob.Register(MoveArgs{})
     labgob.Register(QueryArgs{})
+
+    // map for duplicated client operation detection
+    sm.rcvdCmd = make(map[int64]int)
 
     // The very first configuration should be numbered zero
     // all shards should be assigned go GID 0
