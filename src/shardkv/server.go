@@ -149,12 +149,13 @@ func (kv *ShardKV) applyCmd(command Op) {
                 kv.kvStore[args.Key] += args.Value
             }
 
-            // handle PutAppend from kvservers, send new shards
 
         case "Get":
+            // no status change for Get command
         case "reconfig":
 
             kv.currentConfig = command.Args.(shardmaster.Config)
+            kv.inTransition  = true
             DPrintf("[kvserver: %v @ %v]update config: %v", kv.me, kv.gid, kv.currentConfig)
         }
     }
@@ -279,31 +280,30 @@ func (kv *ShardKV) reconfig(args *shardmaster.Config, sendMap map[int][]string, 
     return true
 }
 
+
+func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsReply) {
+}
+
 // function to send shards to other groups
-func (kv *ShardKV) sendShards(sendMap map[int][]string) {
+func (kv *ShardKV) sendMigrateShards(tGid int, args *MigrateShardsArgs, reply *MigrateStardsReply, sendMap map[int][]string) {
 
     DPrintf("[kvserver: %v @ %v]sendShards: %v", kv.me, kv.gid, sendMap)
     
-    if len(sendMap) == 0 {
-        return
-    }
 
-    // find the keys related to the migration shards
+    // find all the key/value pairs related to the migration shards
     for key, _ := range kv.kvStore {
 
         shard := key2shard(key)
 
         // check if the key ever been Put/Append in kvStore
         _, keyInKvStore := kv.kvStore[key]
-        if servers, ok := sendMap[shard]; ok && keyInKvStore {
-	        args := PutAppendArgs{}
-	        args.Key   = key
-	        args.Value = kv.kvStore[key]
-	        args.Op = "Put"
+        if servers, ok := sendMap[shard]; ok {
+	        args := MigrateShardsArgs{}
+	        args.Maps
             for si := 0; si < len(servers); si++ {
                 srv := kv.make_end(servers[si])
                 var reply PutAppendReply
-                ok := srv.Call("ShardKV.PutAppend", &args, &reply)
+                ok := srv.Call("ShardKV.MigrateShards", &args, &reply)
                 if ok && reply.WrongLeader == false && reply.Err == OK {
                     return
                 }
