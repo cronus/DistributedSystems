@@ -330,7 +330,7 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
         expectShardsList = nil
     } else {
         if oldConfig.Num != newConfig.Num - 1 {
-            DPrintf("[kvserver: %v @ %v]detectConfig, \nold: %v\nnew: %v\n", kv.me, kv.gid, oldConfig, newConfig)
+            DPrintf("[kvserver: %v @ %v]Error: detectConfig, \nold: %v\nnew: %v\n", kv.me, kv.gid, oldConfig, newConfig)
             panic("Cannot handle non-consecutive config changes!")
         }
         DPrintf("[kvserver: %v @ %v]config changed\n", kv.me, kv.gid)
@@ -777,6 +777,8 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 		    }
         }
     }(kv)
+
+    kv.buildState(persister.ReadSnapshot())
 
 	return kv
 }
