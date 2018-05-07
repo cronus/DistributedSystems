@@ -85,7 +85,7 @@ type rfState struct {
 // function to check key in group
 func (kv *ShardKV) isInGroup(key string) bool {
     var inGroup bool
-    if !kv.inTransition {
+    if kv.inTransition {
         inGroup = false
     } else {
         keyShardIndex := key2shard(key)
@@ -177,7 +177,6 @@ func (kv *ShardKV) applyCmd(command Op) Err {
     if num, ok := kv.rcvdCmd[command.ClerkId]; ok && num == command.CommandNum {
         DPrintf("[kvserver: %v @ %v]%v, command %v is already committed.\n", kv.me, kv.gid, command.Name, command)
     } else {
-        kv.rcvdCmd[command.ClerkId] = command.CommandNum
         switch command.Name {
         case "PutAppend":
             args := command.Args.(PutAppendArgs)
@@ -193,6 +192,7 @@ func (kv *ShardKV) applyCmd(command Op) Err {
             case "Append":
                 kv.kvStore[args.Key] += args.Value
             }
+            kv.rcvdCmd[command.ClerkId] = command.CommandNum
 
         case "Get":
             args := command.Args.(GetArgs)
@@ -200,6 +200,7 @@ func (kv *ShardKV) applyCmd(command Op) Err {
                 Err = ErrWrongGroup
                 return Err
             }
+            kv.rcvdCmd[command.ClerkId] = command.CommandNum
         }
     }
 
