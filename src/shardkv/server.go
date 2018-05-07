@@ -494,6 +494,7 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     // check is key in the correct group
     if !kv.isInGroup(args.Key) {
         reply.Err = ErrWrongGroup
+        kv.mu.Unlock()
         return
     }
 
@@ -556,6 +557,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     // check is key in the correct group
     if !kv.isInGroup(args.Key) {
         reply.Err = ErrWrongGroup
+        kv.mu.Unlock()
         return
     }
 
