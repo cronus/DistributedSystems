@@ -165,6 +165,7 @@ func (kv *ShardKV) applyCmd(command Op) {
     if num, ok := kv.rcvdCmd[command.ClerkId]; ok && num == command.CommandNum {
         DPrintf("[kvserver: %v @ %v]%v, command %v is already committed.\n", kv.me, kv.gid, command.Name, command)
     } else {
+        kv.rcvdCmd[command.ClerkId] = command.CommandNum
         switch command.Name {
         case "PutAppend":
             args := command.Args.(PutAppendArgs)
@@ -348,6 +349,7 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
 
     // add command channel to fifo
     kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
+
     kv.mu.Unlock()
 
     rfStateApplied :=<- rfStateCh
@@ -418,6 +420,7 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
 
     // add command channel to fifo
     kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
+
     kv.mu.Unlock()
 
     rfStateApplied :=<- rfStateCh
