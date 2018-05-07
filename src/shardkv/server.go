@@ -70,11 +70,15 @@ type rfState struct {
 //     1. to allow irrelevant key to proceceed
 //     2. to allow received key to proceed
 func (kv *ShardKV) isReady(key string) bool {
+    var ready bool
     if !kv.inTransition {
-        return true
+        ready = true
     } else {
-        return false
+        ready = false
     }
+
+    DPrintf("[kvserver: %v @ %v]check key: %v is ready: %v\n", kv.me, kv.gid, key, ready)
+    return ready
 }
 
 // function to check key in group
@@ -188,7 +192,12 @@ func (kv *ShardKV) applyCmd(command Op) {
         // enter transition
         if len(args.ExpectShardsList) != 0 {
             kv.inTransition  = true
-            kv.expectShardsList = args.ExpectShardsList
+            // since slice is only reference, need to create a new slice
+            //kv.expectShardsList = args.ExpectShardsList 
+            kv.expectShardsList = make([]int, 0)
+            for _, shard := range args.ExpectShardsList {
+                kv.expectShardsList = append(kv.expectShardsList, shard)
+            }
         }
         
     case "MigrateShards":
@@ -226,6 +235,7 @@ func (kv *ShardKV) applyCmd(command Op) {
             if matchIndex != -1 {
                 kv.expectShardsList = append(kv.expectShardsList[:matchIndex], kv.expectShardsList[matchIndex + 1:]...)
             }
+            //DPrintf("[kvserver: %v @ %v]expectShardsList after remove: %v, logs: %v\n", kv.me, kv.gid, kv.expectShardsList, kv.rf.Logs)
         }
         DPrintf("[kvserver: %v @ %v]expectShardsList after remove: %v\n", kv.me, kv.gid, kv.expectShardsList)
 
@@ -280,8 +290,9 @@ func (kv *ShardKV) buildState(data []byte) {
     DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
 }
 
-func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmaster.Config) (map[int][]int, []int) {
+func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmaster.Config) (bool, map[int][]int, []int) {
 
+    var isChanged          bool
     var sendMap            map[int][]int
     var expectShardsList   []int
 
@@ -289,10 +300,12 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
         panic("old config number should not greater than new config number")
     } else if oldConfig.Shards == newConfig.Shards {
         DPrintf("[kvserver: %v @ %v]config no change\n", kv.me, kv.gid)
-        sendMap   = nil
+        isChanged        = false
+        sendMap          = nil
         expectShardsList = nil
     } else {
         DPrintf("[kvserver: %v @ %v]config changed\n", kv.me, kv.gid)
+        isChanged = true
         for i := 0; i < shardmaster.NShards; i++ {
             // send map
             if kv.gid == oldConfig.Shards[i] && kv.gid != newConfig.Shards[i] {
@@ -314,8 +327,8 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
             }
         }
     }
-    DPrintf("[kvserver: %v @ %v]detectConfig, old: %v, new: %v, sendMap: %v, rcvList: %v\n", kv.me, kv.gid, oldConfig, newConfig, sendMap, expectShardsList)
-    return sendMap, expectShardsList
+    DPrintf("[kvserver: %v @ %v]detectConfig, old: %v, new: %v, sendMap: %v, expectShardsList: %v\n", kv.me, kv.gid, oldConfig, newConfig, sendMap, expectShardsList)
+    return isChanged, sendMap, expectShardsList
 }
 
 // only leader can all this function to send reconfig to raft
@@ -446,7 +459,7 @@ func (kv *ShardKV) sendMigrateShards(tGid int, args *MigrateShardsArgs) {
 
 func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
-    defer DPrintf("[kvserver: %v @ %v]Get args: %v, reply: %v\n", kv.me, args, reply, kv.gid)
+    defer DPrintf("[kvserver: %v @ %v]Get args: %v, reply: %v\n", kv.me, kv.gid, args, reply)
 
     rfStateCh := make(chan rfState)
 
@@ -469,9 +482,10 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     rfStateApplied :=<- rfStateCh
     DPrintf("[kvserver: %v @ %v]Get, receive applied command\n", kv.me, kv.gid)
 
+    kv.mu.Lock()
     // if is in transition from one config to another
     // simply disallow all client operations
-    for kv.isReady(args.Key) {
+    for !kv.isReady(args.Key) {
         kv.mu.Unlock()
         time.Sleep(50 * time.Millisecond)
         kv.mu.Lock()
@@ -485,6 +499,8 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 
     // handle reply
     sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
+
+    kv.mu.Unlock()
 
     if sameState {
         reply.Err = OK
@@ -531,7 +547,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     kv.mu.Lock()
     // if is in transition from one config to another
     // simply disallow all client operations
-    for kv.isReady(args.Key) {
+    for !kv.isReady(args.Key) {
         kv.mu.Unlock()
         time.Sleep(50 * time.Millisecond)
         kv.mu.Lock()
@@ -699,8 +715,8 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                     continue
                 }
                 config := kv.mck.Query(-1)
-                sendMap, expectShardsList := kv.detectConfig(kv.currentConfig, config)
-                if len(sendMap) != 0 || len(expectShardsList) != 0 {
+                isChanged, sendMap, expectShardsList := kv.detectConfig(kv.currentConfig, config)
+                if isChanged {
                     // send reconfig to unerlying Raft
                     args                 := &reconfigArgs{}
                     args.Config           = config
