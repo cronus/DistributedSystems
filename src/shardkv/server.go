@@ -63,28 +63,36 @@ type rfState struct {
     index    int
     term     int
     isLeader bool
+    Err      Err
 }
 
 // function to check a key is ready during transition
 // TODO more fine check, 
 //     1. to allow irrelevant key to proceceed
 //     2. to allow received key to proceed
-func (kv *ShardKV) isReady(key string) bool {
-    var ready bool
-    if !kv.inTransition {
-        ready = true
-    } else {
-        ready = false
-    }
-
-    DPrintf("[kvserver: %v @ %v]check key: %v is ready: %v\n", kv.me, kv.gid, key, ready)
-    return ready
-}
+//func (kv *ShardKV) isReady(key string) bool {
+//    var ready bool
+//    if !kv.inTransition {
+//        ready = true
+//    } else {
+//        ready = false
+//    }
+//
+//    DPrintf("[kvserver: %v @ %v]check key: %v is ready: %v\n", kv.me, kv.gid, key, ready)
+//    return ready
+//}
 
 // function to check key in group
 func (kv *ShardKV) isInGroup(key string) bool {
-    keyShardIndex := key2shard(key)
-    return kv.gid == kv.currentConfig.Shards[keyShardIndex]
+    var inGroup bool
+    if !kv.inTransition {
+        inGroup = false
+    } else {
+        keyShardIndex := key2shard(key)
+        inGroup = (kv.gid == kv.currentConfig.Shards[keyShardIndex])
+    }
+
+    return inGroup
 }
 
 // function to feed command to raft
@@ -130,7 +138,8 @@ func (kv *ShardKV) feedCmd(name string, args interface{}) rfState {
     state = rfState {
         index    : index,
         term     : term,
-        isLeader : isLeader}
+        isLeader : isLeader,
+        Err      : OK}
 
     defer DPrintf("[kvserver: %v @ %v]%v, args: %v state: %v\n", kv.me, kv.gid, name, args, state)
     return state
@@ -157,9 +166,12 @@ func (kv *ShardKV) checkRfState(oldState rfState, newState rfState) bool {
     return sameState
 }
 
-func (kv *ShardKV) applyCmd(command Op) {
+func (kv *ShardKV) applyCmd(command Op) Err {
 
     DPrintf("[kvserver: %v @ %v]Apply command: %v", kv.me, kv.gid, command)
+
+    var Err Err
+    Err = OK
 
     // duplicated command detection
     if num, ok := kv.rcvdCmd[command.ClerkId]; ok && num == command.CommandNum {
@@ -170,6 +182,11 @@ func (kv *ShardKV) applyCmd(command Op) {
         case "PutAppend":
             args := command.Args.(PutAppendArgs)
 
+            if !kv.isInGroup(args.Key) {
+                Err = ErrWrongGroup
+                return Err
+            }
+
             switch args.Op {
             case "Put":
                 kv.kvStore[args.Key]  = args.Value
@@ -178,7 +195,11 @@ func (kv *ShardKV) applyCmd(command Op) {
             }
 
         case "Get":
-            // no status change for Get command
+            args := command.Args.(GetArgs)
+            if !kv.isInGroup(args.Key) {
+                Err = ErrWrongGroup
+                return Err
+            }
         }
     }
 
@@ -246,6 +267,8 @@ func (kv *ShardKV) applyCmd(command Op) {
             kv.inTransition = false
         }
     }
+
+    return Err
 }
 
 func (kv *ShardKV) checkLogSize(persister *raft.Persister, lastIndex int) {
@@ -305,6 +328,10 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
         sendMap          = nil
         expectShardsList = nil
     } else {
+        if oldConfig.Num != newConfig.Num - 1 {
+            DPrintf("[kvserver: %v @ %v]detectConfig, \nold: %v\nnew: %v\n", kv.me, kv.gid, oldConfig, newConfig)
+            panic("Cannot handle non-consecutive config changes!")
+        }
         DPrintf("[kvserver: %v @ %v]config changed\n", kv.me, kv.gid)
         isChanged = true
         for i := 0; i < shardmaster.NShards; i++ {
@@ -328,7 +355,7 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
             }
         }
     }
-    DPrintf("[kvserver: %v @ %v]detectConfig, old: %v, new: %v, sendMap: %v, expectShardsList: %v\n", kv.me, kv.gid, oldConfig, newConfig, sendMap, expectShardsList)
+    DPrintf("[kvserver: %v @ %v]detectConfig, \nold: %v, \nnew: %v, \nsendMap: %v, \nexpectShardsList: %v\n", kv.me, kv.gid, oldConfig, newConfig, sendMap, expectShardsList)
     return isChanged, sendMap, expectShardsList
 }
 
@@ -488,14 +515,20 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     kv.mu.Lock()
     // if is in transition from one config to another
     // simply disallow all client operations
-    for !kv.isReady(args.Key) {
-        kv.mu.Unlock()
-        time.Sleep(50 * time.Millisecond)
-        kv.mu.Lock()
-    }
+    //for !kv.isReady(args.Key) {
+    //    kv.mu.Unlock()
+    //    time.Sleep(50 * time.Millisecond)
+    //    kv.mu.Lock()
+    //}
 
-    // check is key in the correct group
-    if !kv.isInGroup(args.Key) {
+    //// check is key in the correct group
+    //if !kv.isInGroup(args.Key) {
+    //    reply.Err = ErrWrongGroup
+    //    kv.mu.Unlock()
+    //    return
+    //}
+
+    if rfStateApplied.Err == ErrWrongGroup {
         reply.Err = ErrWrongGroup
         kv.mu.Unlock()
         return
@@ -549,16 +582,22 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     DPrintf("[kvserver: %v @ %v]PutAppend, receive applied command\n", kv.me, kv.gid)
 
     kv.mu.Lock()
-    // if is in transition from one config to another
-    // simply disallow all client operations
-    for !kv.isReady(args.Key) {
-        kv.mu.Unlock()
-        time.Sleep(50 * time.Millisecond)
-        kv.mu.Lock()
-    }
+    //// if is in transition from one config to another
+    //// simply disallow all client operations
+    //for !kv.isReady(args.Key) {
+    //    kv.mu.Unlock()
+    //    time.Sleep(50 * time.Millisecond)
+    //    kv.mu.Lock()
+    //}
 
-    // check is key in the correct group
-    if !kv.isInGroup(args.Key) {
+    //// check is key in the correct group
+    //if !kv.isInGroup(args.Key) {
+    //    reply.Err = ErrWrongGroup
+    //    kv.mu.Unlock()
+    //    return
+    //}
+
+    if rfStateApplied.Err == ErrWrongGroup {
         reply.Err = ErrWrongGroup
         kv.mu.Unlock()
         return
@@ -668,8 +707,8 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                     var rfStateCh chan rfState
                     applyIndex := msg.CommandIndex
                     kv.mu.Lock()
-                    op := msg.Command.(Op)
-                    kv.applyCmd(op)
+                    op  := msg.Command.(Op)
+                    Err := kv.applyCmd(op)
                     kv.checkLogSize(persister, applyIndex)
 
                     // drain the rfState channel if not empty
@@ -678,7 +717,8 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                         rfStateApplied = rfState {
                             index    : applyIndex,
                             term     : applyTerm,
-                            isLeader : applyIsLeader}
+                            isLeader : applyIsLeader,
+                            Err      : Err}
                         
                         rfStateCh, kv.rfStateChBuffer = kv.rfStateChBuffer[0], kv.rfStateChBuffer[1:]
                         DPrintf("[kvserver: %v @ %v]drain the command to channel, %v\n", kv.me, kv.gid, rfStateApplied)
