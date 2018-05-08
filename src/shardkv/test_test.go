@@ -164,9 +164,9 @@ func TestSnapshot(t *testing.T) {
 
     fmt.Println("1")
 	cfg.join(1)
-	time.Sleep(1 * time.Second)
+	//time.Sleep(1 * time.Second)
 	cfg.join(2)
-	time.Sleep(1 * time.Second)
+	//time.Sleep(1 * time.Second)
 	cfg.leave(0)
     fmt.Println("2")
 
@@ -179,7 +179,7 @@ func TestSnapshot(t *testing.T) {
     fmt.Println("3")
 
 	cfg.leave(1)
-	time.Sleep(1 * time.Second)
+	//time.Sleep(1 * time.Second)
 	cfg.join(0)
     fmt.Println("4")
 
