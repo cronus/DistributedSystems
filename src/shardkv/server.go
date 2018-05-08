@@ -796,6 +796,14 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // use Sleep for 500 ms as a solution
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
+        config := kv.mck.Query(1)
+        if config.Num == 1 {
+            // send reconfig to unerlying Raft
+            args                 := &reconfigArgs{}
+            args.Config           = config
+            args.ExpectShardsList = nil
+            kv.reconfig(args, nil)
+        }
         for {
             select {
             case <-kv.shutdown:
