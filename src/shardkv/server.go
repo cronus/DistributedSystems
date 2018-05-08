@@ -353,7 +353,16 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
     var sendMap            map[int][]int
     var expectShardsList   []int
 
+    if oldConfig.Num == 0 && newConfig.Num == 1 {
+        DPrintf("[kvserver: %v @ %v]initialize config\n", kv.me, kv.gid)
+        isChanged = true
+        sendMap   = nil
+        expectShardsList = nil
+        return isChanged, sendMap, expectShardsList
+    }
+
     if oldConfig.Num > newConfig.Num {
+        DPrintf("[kvserver: %v @ %v]old > new detectConfig, \nold: %v, \nnew: %v", kv.me, kv.gid, oldConfig, newConfig)
         panic("old config number should not greater than new config number")
     } else if oldConfig.Shards == newConfig.Shards {
         DPrintf("[kvserver: %v @ %v]NO config change\n", kv.me, kv.gid)
@@ -796,14 +805,15 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // use Sleep for 500 ms as a solution
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
-        config := kv.mck.Query(1)
-        if config.Num == 1 {
-            // send reconfig to unerlying Raft
-            args                 := &reconfigArgs{}
-            args.Config           = config
-            args.ExpectShardsList = nil
-            kv.reconfig(args, nil)
-        }
+        //var config shardmaster.Config
+        //for config.Num == 0 {
+        //    config = kv.mck.Query(1)
+        //}
+        //// send reconfig to unerlying Raft
+        //args                 := &reconfigArgs{}
+        //args.Config           = config
+        //args.ExpectShardsList = nil
+        //kv.reconfig(args, nil)
         for {
             select {
             case <-kv.shutdown:
@@ -814,7 +824,12 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 		            time.Sleep(500 * time.Millisecond)
                     continue
                 }
-                config := kv.mck.Query(-1)
+                if kv.inTransition {
+                    time.Sleep(50 * time.Millisecond)
+                    continue
+                }
+                DPrintf("[kvserver: %v @ %v]polling master for config, currentConfig: %v\n", kv.me, kv.gid, kv.currentConfig)
+                config := kv.mck.Query(kv.currentConfig.Num + 1)
                 isChanged, sendMap, expectShardsList := kv.detectConfig(kv.currentConfig, config)
                 if isChanged {
                     // send reconfig to unerlying Raft
