@@ -60,6 +60,8 @@ type MigrateShardsArgs struct {
     ShardsList []int
     KVPairs    map[string]string
     DupDtn     map[int64]int
+    ClerkId    int64
+    CommandNum int
 }
 
 type MigrateShardsReply struct {

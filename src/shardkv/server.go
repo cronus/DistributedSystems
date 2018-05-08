@@ -50,6 +50,8 @@ type ShardKV struct {
     // persist when snapshot
     kvStore map[string]string
     rcvdCmd map[int64]int
+    rcvdKVCmd map[int64]int
+    commandNum int
 
     // need to initial when is the Leader
     initialIndex    int
@@ -100,7 +102,7 @@ func (kv *ShardKV) containAllShards () bool {
         containAll = containAll && (kv.currentConfig.Shards[shard] == kv.gid)
     }
 
-    DPrintf("[kvserver: %v @ %v]%v, shadsList %v contain all shards for config: %v\n", kv.me, kv.gid, containAll, kv.shardsList, kv.currentConfig)
+    DPrintf("[kvserver: %v @ %v]%v, shadsList %v vs shards for config: %v\n", kv.me, kv.gid, containAll, kv.shardsList, kv.currentConfig)
     return containAll
 }
 
@@ -135,11 +137,12 @@ func (kv *ShardKV) feedCmd(name string, args interface{}) rfState {
         commandNum = a.CommandNum
     case "reconfig":
         // no action for pseudo command config
-        clerkId    = 0
-        commandNum = -1
-    case "MigrateShards":
         clerkId    = -1
         commandNum = -1
+    case "MigrateShards":
+        a         := args.(MigrateShardsArgs)
+        clerkId    = a.ClerkId
+        commandNum = a.CommandNum
         
     default:
         panic("unexpected command!")
@@ -247,43 +250,50 @@ func (kv *ShardKV) applyCmd(command Op) Err {
         }
         
     case "MigrateShards":
-        args := command.Args.(MigrateShardsArgs)
+        if num, ok := kv.rcvdKVCmd[command.ClerkId]; ok && num == command.CommandNum {
+            DPrintf("[kvserver: %v @ %v]%v, KVServer command %v is already committed.\n", kv.me, kv.gid, command.Name, command)
+        } else {
+            args := command.Args.(MigrateShardsArgs)
 
-        // copy the keys to kv.kvStore
-        DPrintf("[kvserver: %v @ %v]Before migration, kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
-        for key, value := range args.KVPairs {
-            kv.kvStore[key] = value
-        }
-        DPrintf("[kvserver: %v @ %v]After migration, new kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
-
-        // merge rcvdCmds
-        DPrintf("[kvserver: %v @ %v]Before migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
-        for srcClerkId, srcCmdId := range args.DupDtn {
-            if tgtCmdId, ok := kv.rcvdCmd[srcClerkId]; ok {
-                if srcCmdId > tgtCmdId {
-                    kv.rcvdCmd[srcClerkId] = srcCmdId
-                } 
-            } else {
-                kv.rcvdCmd[srcClerkId] = srcCmdId
+            // copy the keys to kv.kvStore
+            DPrintf("[kvserver: %v @ %v]Before migration, kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
+            for key, value := range args.KVPairs {
+                kv.kvStore[key] = value
             }
-        }
-        DPrintf("[kvserver: %v @ %v]After migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
+            DPrintf("[kvserver: %v @ %v]After migration, new kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
 
-        // add the shards in args to kv.shardsList
-        for _, shard := range args.ShardsList {
-            for _, s := range kv.shardsList {
-                if shard == s {
-                    panic("should not contain index")
+            // merge rcvdCmds
+            DPrintf("[kvserver: %v @ %v]Before migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
+            for srcClerkId, srcCmdId := range args.DupDtn {
+                if tgtCmdId, ok := kv.rcvdCmd[srcClerkId]; ok {
+                    if srcCmdId > tgtCmdId {
+                        kv.rcvdCmd[srcClerkId] = srcCmdId
+                    } 
+                } else {
+                    kv.rcvdCmd[srcClerkId] = srcCmdId
                 }
             }
-            kv.shardsList = append(kv.shardsList, shard)
-        }
-        DPrintf("[kvserver: %v @ %v]kv.shardsList after append: %v\n", kv.me, kv.gid, kv.shardsList)
+            DPrintf("[kvserver: %v @ %v]After migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
 
-        // if shardsList matches currentConfig.Shards 
-        // finish transition, set kv.inTransition to false
-        if kv.containAllShards() {
-            kv.inTransition = false
+            // add the shards in args to kv.shardsList
+            for _, shard := range args.ShardsList {
+                for _, s := range kv.shardsList {
+                    if shard == s {
+                        DPrintf("[kvserver: %v @ %v]kv.shardsList: %v, args.ShardsList: %v\n", kv.me, kv.gid, kv.shardsList, args.ShardsList)
+                        panic("should not contain index")
+                    }
+                }
+                kv.shardsList = append(kv.shardsList, shard)
+            }
+            DPrintf("[kvserver: %v @ %v]kv.shardsList after append: %v\n", kv.me, kv.gid, kv.shardsList)
+
+            // if shardsList matches currentConfig.Shards 
+            // finish transition, set kv.inTransition to false
+            if kv.containAllShards() {
+                kv.inTransition = false
+            }
+
+            kv.rcvdKVCmd[command.ClerkId] = command.CommandNum
         }
     }
 
@@ -301,6 +311,7 @@ func (kv *ShardKV) checkLogSize(persister *raft.Persister, lastIndex int) {
         e            := labgob.NewEncoder(buffer)
         e.Encode(kv.kvStore)
         e.Encode(kv.rcvdCmd)
+        e.Encode(kv.rcvdKVCmd)
         snapshotData := buffer.Bytes()
 
         // send snapshot to raft 
@@ -329,6 +340,9 @@ func (kv *ShardKV) buildState(data []byte) {
         panic(err)
     }
 
+    if err := d.Decode(&kv.rcvdKVCmd); err != nil {
+        panic(err)
+    }
 
     DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
 }
@@ -406,6 +420,8 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
     kv.mu.Lock()
     // send to other groups
     // TODO remove the key/value pairs
+
+    sendShards := make([]int, 0)
     for gid, shards := range sendMap {
 
         kvPairs := make(map[string]string)
@@ -422,6 +438,7 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
             matchIndex := -1
             for i, sh := range kv.shardsList {
                 if sh == s {
+                    sendShards = append(sendShards, s)
                     matchIndex = i
                     break
                 }
@@ -431,12 +448,19 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
                 kv.shardsList = append(kv.shardsList[:matchIndex], kv.shardsList[matchIndex+1:]...)
             }
         }
-        DPrintf("[kvserver: %v @ %v]shardsList after send shards: %v is %v\n", kv.me, kv.gid, shards, kv.shardsList)
+        DPrintf("[kvserver: %v @ %v]reconfig: sendShards: %v total shards: %v, kv.shardsList: %v\n", kv.me, kv.gid, sendShards, shards, kv.shardsList)
 
+        if len(sendShards) == 0 {
+            continue
+        }
         args           := &MigrateShardsArgs{}
         args.ShardsList = shards
         args.KVPairs    = kvPairs
         args.DupDtn     = kv.rcvdCmd
+        args.ClerkId    = int64(kv.gid)
+        args.CommandNum = kv.commandNum
+
+        kv.commandNum++
 
         DPrintf("[kvserver: %v @ %v]args send to other groups: %v\n", kv.me, kv.gid, args)
 
@@ -459,11 +483,11 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
 
     // if is not in transition from one config to another
     // disallow shards migration operations
-    for !kv.inTransition {
-        kv.mu.Unlock()
-        time.Sleep(5 * time.Millisecond)
-        kv.mu.Lock()
-    }
+    //for !kv.inTransition {
+    //    kv.mu.Unlock()
+    //    time.Sleep(5 * time.Millisecond)
+    //    kv.mu.Lock()
+    //}
 
     // feed command to raft
     rfStateFeed := kv.feedCmd("MigrateShards", *args)
@@ -711,8 +735,10 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     labgob.Register(MigrateShardsArgs{})
 
     // store in snapshot
-    kv.rcvdCmd         = make(map[int64]int)
     kv.kvStore         = make(map[string]string)
+    kv.rcvdCmd         = make(map[int64]int)
+    kv.rcvdKVCmd       = make(map[int64]int)
+    kv.commandNum      = 0
 
     kv.initialIndex    = 0
     kv.rfStateChBuffer = make([]chan rfState, 0)
