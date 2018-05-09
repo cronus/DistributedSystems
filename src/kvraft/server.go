@@ -329,6 +329,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.maxraftstate = maxraftstate
 
 	// You may need initialization code here.
+    labgob.Register(KvState{})
 
 	kv.applyCh = make(chan raft.ApplyMsg)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
@@ -381,10 +382,17 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
                     // kv server should restore the snapshot from the persister when it restarts
                     if kv.maxraftstate != -1 && persister.RaftStateSize() > kv.maxraftstate {
                         // snapshot
+                        KvState   := KvState{
+                            KvStore     : kv.kvStore,
+                            ReceivedCmd : kv.receivedCmd}
+                        SnapshotData := raft.SnapshotData{
+                            KvState: KvState}
+
                         buffer       := new(bytes.Buffer)
                         e            := labgob.NewEncoder(buffer)
-                        e.Encode(kv.kvStore)
-                        e.Encode(kv.receivedCmd)
+                        //e.Encode(kv.kvStore)
+                        //e.Encode(kv.receivedCmd)
+                        e.Encode(&SnapshotData.KvState)
                         snapshotData := buffer.Bytes()
 
                         // send snapshot to raft 
@@ -455,6 +463,7 @@ func (kv *KVServer) buildState(data []byte) {
 
     //kv.mu.Lock()
     //defer kv.mu.Unlock()
+    snapshotData := raft.SnapshotData{}
 
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
@@ -468,14 +477,20 @@ func (kv *KVServer) buildState(data []byte) {
     //    panic(err)
     //}
 
-    if err := d.Decode(&kv.kvStore); err != nil {
-        panic(err)
-    }
+    //if err := d.Decode(&kv.kvStore); err != nil {
+    //    panic(err)
+    //}
 
-    // restore receivedCmd
-    if err := d.Decode(&kv.receivedCmd); err != nil {
+    //// restore receivedCmd
+    //if err := d.Decode(&kv.receivedCmd); err != nil {
+    //    panic(err)
+    //}
+    if err := d.Decode(&snapshotData.KvState); err != nil {
         panic(err)
     }
+    kvS           := snapshotData.KvState.(KvState)
+    kv.kvStore     = kvS.KvStore
+    kv.receivedCmd = kvS.ReceivedCmd
 
 
     DPrintf("[kvserver: %v]After build kvServer state: kvstore: %v\n", kv.me, kv.kvStore)

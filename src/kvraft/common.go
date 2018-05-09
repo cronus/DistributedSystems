@@ -38,3 +38,8 @@ type GetReply struct {
 	Err         Err
 	Value       string
 }
+
+type KvState struct {
+    KvStore     map[string]string
+    ReceivedCmd map[int64]int
+}

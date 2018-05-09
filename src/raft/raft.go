@@ -50,6 +50,10 @@ type LogEntry struct {
     Command interface{}
 }
 
+type SnapshotData struct {
+    KvState interface{}
+}
+
 //
 // A Go object implementing a single Raft peer.
 //
@@ -213,23 +217,30 @@ func (rf *Raft) readSnapshot(data []byte) {
     //rf.mu.Lock()
     //defer rf.mu.Unlock()
 
-    kvStore     := make(map[string]string)
-    receivedCmd := make(map[int]int)
+    //kvStore     := make(map[string]string)
+    //receivedCmd := make(map[int]int)
+    snapshotData := SnapshotData{}
 
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
 
     // decode kvStore and encode into bytes
-    if err := d.Decode(&kvStore); err != nil {
+    //if err := d.Decode(&kvStore); err != nil {
+    //    panic(err)
+    //}
+    //if err := d.Decode(&receivedCmd); err != nil {
+    //    panic(err)
+    //}
+
+    if err := d.Decode(&snapshotData.KvState); err != nil {
         panic(err)
     }
-    if err := d.Decode(&receivedCmd); err != nil {
-        panic(err)
-    }
+
     bufferKv := new(bytes.Buffer)
     eKv      := labgob.NewEncoder(bufferKv)
-    eKv.Encode(kvStore)
-    eKv.Encode(receivedCmd)
+    //eKv.Encode(kvStore)
+    //eKv.Encode(receivedCmd)
+    eKv.Encode(&snapshotData.KvState)
     rf.snapshotData = bufferKv.Bytes()
 
     var lastIncludedIndex int
