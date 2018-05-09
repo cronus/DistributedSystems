@@ -14,7 +14,7 @@ import "log"
 const linearizabilityCheckTimeout = 1 * time.Second
 
 func check(t *testing.T, ck *Clerk, key string, value string) {
-    fmt.Println("string: "+key)
+    //fmt.Println("string: "+key)
 	v := ck.Get(key)
 	if v != value {
 		t.Fatalf("Get(%v): expected:\n%v\nreceived:\n%v", key, value, v)
@@ -166,13 +166,9 @@ func TestSnapshot(t *testing.T) {
 		check(t, ck, ka[i], va[i])
 	}
 
-    fmt.Println("1")
 	cfg.join(1)
-	//time.Sleep(1 * time.Second)
 	cfg.join(2)
-	//time.Sleep(1 * time.Second)
 	cfg.leave(0)
-    fmt.Println("2")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -180,12 +176,9 @@ func TestSnapshot(t *testing.T) {
 		ck.Append(ka[i], x)
 		va[i] += x
 	}
-    fmt.Println("3")
 
 	cfg.leave(1)
-	//time.Sleep(1 * time.Second)
 	cfg.join(0)
-    fmt.Println("4")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -193,20 +186,17 @@ func TestSnapshot(t *testing.T) {
 		ck.Append(ka[i], x)
 		va[i] += x
 	}
-    fmt.Println("5")
 
 	time.Sleep(1 * time.Second)
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
 	}
-    fmt.Println("6")
 
 	time.Sleep(1 * time.Second)
 
 	cfg.checklogs()
 
-    fmt.Println("7")
 	cfg.ShutdownGroup(0)
 	cfg.ShutdownGroup(1)
 	cfg.ShutdownGroup(2)
@@ -216,12 +206,10 @@ func TestSnapshot(t *testing.T) {
 	cfg.StartGroup(1)
 	cfg.StartGroup(2)
 
-    fmt.Println("8")
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
 	}
 
-    fmt.Println("9")
 	fmt.Printf("  ... Passed\n")
 }
 

@@ -53,6 +53,9 @@ type ShardKV struct {
     //rcvdKVCmd map[int64]int
     commandNum int
 
+    // kvStoreBackup for garbage collection
+    kvStoreBackup map[string]string
+
     // need to initial when is the Leader
     initialIndex    int
     rfStateChBuffer []chan rfState
@@ -232,6 +235,33 @@ func (kv *ShardKV) applyCmd(command Op) Err {
                 kv.expectShardsList = append(kv.expectShardsList, shard)
             }
         }
+
+        // copy kv.kvstore to kv.kvStoreBackup
+        kv.kvStoreBackup = make(map[string]string)
+        for k, v := range kv.kvStore {
+            kv.kvStoreBackup[k] = v
+        }
+
+        DPrintf("[kvserver: %v @ %v]Before delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
+        // delete all the keys in args.ShardsList
+        // get all the keys in map
+        allKeys := make([]string, 0)
+        for k, _ := range kv.kvStore {
+            allKeys = append(allKeys, k)
+        }
+        for _, shards := range args.SendMap {
+            // check the key is in args.ShardsList
+            // if in, then delete from kv.kvStroe
+            for _, shard := range shards {
+                for _, key := range allKeys {
+                    if key2shard(key) == shard {
+                        delete(kv.kvStore, key)
+                    }
+                }
+            }
+        }
+        DPrintf("[kvserver: %v @ %v]After delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
+
         
     case "MigrateShards":
         //if num, ok := kv.rcvdKVCmd[command.ClerkId]; ok && num == command.CommandNum {
@@ -405,9 +435,9 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
 }
 
 // only leader can all this function to send reconfig to raft
-func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
+func (kv *ShardKV) reconfig(args *reconfigArgs) bool {
 
-    DPrintf("[kvserver: %v @ %v]reconfig, args: %v, sendMap: %v\n", kv.me, kv.gid, args, sendMap)
+    DPrintf("[kvserver: %v @ %v]reconfig, args: %v\n", kv.me, kv.gid, args)
     rfStateCh := make(chan rfState)
     
     kv.mu.Lock()
@@ -437,12 +467,12 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
     // send to other groups
     // TODO remove the key/value pairs
 
-    for gid, shards := range sendMap {
+    for gid, shards := range args.SendMap {
 
         kvPairs := make(map[string]string)
-        // find all the keys related to the gid and sendMap[gid]
+        // find all the keys related to the gid and args.sendMap[gid]
         for _, shard := range shards {
-            for key, value := range kv.kvStore {
+            for key, value := range kv.kvStoreBackup {
                 if shard == key2shard(key) {
                     kvPairs[key] = value
                 }
@@ -465,6 +495,8 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
 
         go kv.sendMigrateShards(gid, args)
     }
+
+    kv.kvStoreBackup = nil
 
     kv.mu.Unlock()
 
@@ -529,27 +561,6 @@ func (kv *ShardKV) sendMigrateShards(tGid int, args *MigrateShardsArgs) {
             reply := new(MigrateShardsReply)
             ok := srv.Call("ShardKV.MigrateShards", args, reply)
             if ok && reply.WrongLeader == false && reply.Err == OK {
-
-                //kv.mu.Lock()
-                //DPrintf("[kvserver: %v @ %v]Before delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
-                //// delete all the keys in args.ShardsList
-                //// get all the keys in map
-                //allKeys := make([]string, 0)
-                //for k, _ := range kv.kvStore {
-                //    allKeys = append(allKeys, k)
-                //}
-                //// check the key is in args.ShardsList
-                //// if in, then delete from kv.kvStroe
-                //for _, shard := range args.ShardsList {
-                //    for _, key := range allKeys {
-                //        if key2shard(key) == shard {
-                //            delete(kv.kvStore, key)
-                //        }
-                //    }
-                //}
-                //DPrintf("[kvserver: %v @ %v]After delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
-                //kv.mu.Unlock()
-
                 return
             }
             if ok && reply.Err == ErrWrongGroup {
@@ -759,6 +770,8 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     //kv.rcvdKVCmd       = make(map[int64]int)
     kv.commandNum      = 0
 
+    kv.kvStoreBackup     = nil
+
     kv.initialIndex    = 0
     kv.rfStateChBuffer = make([]chan rfState, 0)
     kv.shutdown        = make(chan struct{})
@@ -853,12 +866,16 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                     // send reconfig to unerlying Raft
                     args                 := &reconfigArgs{}
                     args.Config           = config
+                    args.SendMap          = sendMap
                     args.ExpectShardsList = expectShardsList
-                    isSucceed := kv.reconfig(args, sendMap)
+                    //isSucceed := kv.reconfig(args)
+                    // if return is false, meaning not the leader
+                    // not need to do anything
+                    kv.reconfig(args)
 
-                    if !isSucceed {
-                        panic("reconfig failed")
-                    }
+                    //if !isSucceed {
+                    //    panic("reconfig failed")
+                    //}
                 }
 		    }
         }

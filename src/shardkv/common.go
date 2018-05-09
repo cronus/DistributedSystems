@@ -53,6 +53,7 @@ type GetReply struct {
 
 type reconfigArgs struct {
     Config           shardmaster.Config
+    SendMap          map[int][]int
     ExpectShardsList []int
 }
 
