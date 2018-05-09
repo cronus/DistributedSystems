@@ -305,7 +305,8 @@ func (kv *ShardKV) checkLogSize(persister *raft.Persister, lastIndex int) {
             KvStore          : kv.kvStore,
             RcvdCmd          : kv.rcvdCmd,
             CurrentConfig    : kv.currentConfig,
-            ExpectShardsList : kv.expectShardsList}
+            ExpectShardsList : kv.expectShardsList,
+            InTransition     : kv.inTransition}
         snapshotStruct := raft.SnapshotData{
             KvState: kvState}
 
@@ -343,9 +344,10 @@ func (kv *ShardKV) buildState(data []byte) {
     kv.rcvdCmd          = kvS.RcvdCmd
     kv.currentConfig    = kvS.CurrentConfig
     kv.expectShardsList = kvS.ExpectShardsList
+    kv.inTransition     = kvS.InTransition
 
 
-    DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
+    DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v, kv.currentConfig: %v, kv.expectedShardsList, kv.inTransition: %v\n", kv.me, kv.gid, kv.kvStore, kv.currentConfig, kv.expectShardsList, kv.inTransition)
 }
 
 func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmaster.Config) (bool, map[int][]int, []int) {

@@ -75,4 +75,5 @@ type KvState struct {
     RcvdCmd           map[int64]int
     CurrentConfig     shardmaster.Config
     ExpectShardsList  []int
+    InTransition      bool
 }
