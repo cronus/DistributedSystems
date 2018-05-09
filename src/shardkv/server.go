@@ -44,13 +44,13 @@ type ShardKV struct {
     // for migrate shards
     mck              *shardmaster.Clerk
     currentConfig    shardmaster.Config
-    shardsList       []int
+    expectShardsList []int
     inTransition     bool
 
     // persist when snapshot
     kvStore map[string]string
     rcvdCmd map[int64]int
-    rcvdKVCmd map[int64]int
+    //rcvdKVCmd map[int64]int
     commandNum int
 
     // need to initial when is the Leader
@@ -83,28 +83,6 @@ type rfState struct {
 //    DPrintf("[kvserver: %v @ %v]check key: %v is ready: %v\n", kv.me, kv.gid, key, ready)
 //    return ready
 //}
-
-func (kv *ShardKV) getShardsList (shards [shardmaster.NShards]int) []int {
-    shardsList := make([]int, 0)
-    for shard, gid := range shards {
-        if kv.gid == gid {
-            shardsList = append(shardsList, shard)
-        }
-    }
-    DPrintf("[kvserver: %v @ %v]shardslist: %v", kv.me, kv.gid, shardsList)
-    return shardsList
-}
-
-func (kv *ShardKV) containAllShards () bool {
-    containAll := true
-
-    for _, shard := range kv.shardsList {
-        containAll = containAll && (kv.currentConfig.Shards[shard] == kv.gid)
-    }
-
-    DPrintf("[kvserver: %v @ %v]%v, shadsList %v vs shards for config: %v\n", kv.me, kv.gid, containAll, kv.shardsList, kv.currentConfig)
-    return containAll
-}
 
 // function to check key in group
 func (kv *ShardKV) isInGroup(key string) bool {
@@ -238,63 +216,67 @@ func (kv *ShardKV) applyCmd(command Op) Err {
         kv.currentConfig = args.Config
         DPrintf("[kvserver: %v @ %v]update config: %v", kv.me, kv.gid, kv.currentConfig)
 
-        // initial shardsList
-        if kv.shardsList == nil {
-            kv.shardsList = kv.getShardsList(kv.currentConfig.Shards)
-            return Err
-        }
-
-        //if !kv.containAllShards() {
+        // enter transition
         if len(args.ExpectShardsList) != 0 {
-            kv.inTransition = true
+            kv.inTransition  = true
+            // since slice is only reference, need to create a new slice
+            //kv.expectShardsList = args.ExpectShardsList 
+            kv.expectShardsList = make([]int, 0)
+            for _, shard := range args.ExpectShardsList {
+                kv.expectShardsList = append(kv.expectShardsList, shard)
+            }
         }
         
     case "MigrateShards":
-        if num, ok := kv.rcvdKVCmd[command.ClerkId]; ok && num == command.CommandNum {
-            DPrintf("[kvserver: %v @ %v]%v, KVServer command %v is already committed.\n", kv.me, kv.gid, command.Name, command)
-        } else {
-            args := command.Args.(MigrateShardsArgs)
+        //if num, ok := kv.rcvdKVCmd[command.ClerkId]; ok && num == command.CommandNum {
+        //    DPrintf("[kvserver: %v @ %v]%v, KVServer command %v is already committed.\n", kv.me, kv.gid, command.Name, command)
+        //} else {
+        args := command.Args.(MigrateShardsArgs)
 
-            // copy the keys to kv.kvStore
-            DPrintf("[kvserver: %v @ %v]Before migration, kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
-            for key, value := range args.KVPairs {
-                kv.kvStore[key] = value
-            }
-            DPrintf("[kvserver: %v @ %v]After migration, new kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
-
-            // merge rcvdCmds
-            DPrintf("[kvserver: %v @ %v]Before migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
-            for srcClerkId, srcCmdId := range args.DupDtn {
-                if tgtCmdId, ok := kv.rcvdCmd[srcClerkId]; ok {
-                    if srcCmdId > tgtCmdId {
-                        kv.rcvdCmd[srcClerkId] = srcCmdId
-                    } 
-                } else {
-                    kv.rcvdCmd[srcClerkId] = srcCmdId
-                }
-            }
-            DPrintf("[kvserver: %v @ %v]After migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
-
-            // add the shards in args to kv.shardsList
-            for _, shard := range args.ShardsList {
-                for _, s := range kv.shardsList {
-                    if shard == s {
-                        DPrintf("[kvserver: %v @ %v]kv.shardsList: %v, args.ShardsList: %v\n", kv.me, kv.gid, kv.shardsList, args.ShardsList)
-                        panic("should not contain index")
-                    }
-                }
-                kv.shardsList = append(kv.shardsList, shard)
-            }
-            DPrintf("[kvserver: %v @ %v]kv.shardsList after append: %v\n", kv.me, kv.gid, kv.shardsList)
-
-            // if shardsList matches currentConfig.Shards 
-            // finish transition, set kv.inTransition to false
-            if kv.containAllShards() {
-                kv.inTransition = false
-            }
-
-            kv.rcvdKVCmd[command.ClerkId] = command.CommandNum
+        // copy the keys to kv.kvStore
+        DPrintf("[kvserver: %v @ %v]Before migration, kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
+        for key, value := range args.KVPairs {
+            kv.kvStore[key] = value
         }
+        DPrintf("[kvserver: %v @ %v]After migration, new kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
+
+        // merge rcvdCmds
+        DPrintf("[kvserver: %v @ %v]Before migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
+        for srcClerkId, srcCmdId := range args.DupDtn {
+            if tgtCmdId, ok := kv.rcvdCmd[srcClerkId]; ok {
+                if srcCmdId > tgtCmdId {
+                    kv.rcvdCmd[srcClerkId] = srcCmdId
+                } 
+            } else {
+                kv.rcvdCmd[srcClerkId] = srcCmdId
+            }
+        }
+        DPrintf("[kvserver: %v @ %v]After migration, rcvdCmd: %v\n", kv.me, kv.gid, kv.rcvdCmd)
+
+        // remove the shards in args from kv.expectShardsList
+        for _, shard := range args.ShardsList {
+            matchIndex := -1
+            for i, s := range kv.expectShardsList {
+                if shard == s {
+                    matchIndex = i
+                    break
+                }
+            }
+            if matchIndex != -1 {
+                kv.expectShardsList = append(kv.expectShardsList[:matchIndex], kv.expectShardsList[matchIndex + 1:]...)
+            }
+            //DPrintf("[kvserver: %v @ %v]expectShardsList after remove: %v, logs: %v\n", kv.me, kv.gid, kv.expectShardsList, kv.rf.Logs)
+        }
+        DPrintf("[kvserver: %v @ %v]expectShardsList after remove: %v\n", kv.me, kv.gid, kv.expectShardsList)
+
+        // if all the expected shards have been received
+        // finish transition, set kv.inTransition to false
+        if len(kv.expectShardsList) == 0 {
+            kv.inTransition = false
+        }
+
+        //kv.rcvdKVCmd[command.ClerkId] = command.CommandNum
+        //}
     }
 
     return Err
@@ -307,11 +289,18 @@ func (kv *ShardKV) checkLogSize(persister *raft.Persister, lastIndex int) {
     // kv server should restore the snapshot from the persister when it restarts
     if kv.maxraftstate != -1 && persister.RaftStateSize() > kv.maxraftstate {
         // snapshot
+        kvState   := KvState{
+            KvStore       : kv.kvStore,
+            RcvdCmd       : kv.rcvdCmd,
+            CurrentConfig : kv.currentConfig}
+        snapshotStruct := raft.SnapshotData{
+            KvState: kvState}
+
         buffer       := new(bytes.Buffer)
         e            := labgob.NewEncoder(buffer)
-        e.Encode(kv.kvStore)
-        e.Encode(kv.rcvdCmd)
-        e.Encode(kv.rcvdKVCmd)
+        //e.Encode(kv.kvStore)
+        //e.Encode(kv.rcvdCmd)
+        e.Encode(&snapshotStruct.KvState)
         snapshotData := buffer.Bytes()
 
         // send snapshot to raft 
@@ -327,22 +316,20 @@ func (kv *ShardKV) buildState(data []byte) {
 
     //kv.mu.Lock()
     //defer kv.mu.Unlock()
+    snapshotData := raft.SnapshotData{}
 
     buffer := bytes.NewBuffer(data)
     d  := labgob.NewDecoder(buffer)
 
-    if err := d.Decode(&kv.kvStore); err != nil {
+    if err := d.Decode(&snapshotData.KvState); err != nil {
         panic(err)
     }
 
-    // restore receivedCmd
-    if err := d.Decode(&kv.rcvdCmd); err != nil {
-        panic(err)
-    }
+    kvS        := snapshotData.KvState.(KvState)
+    kv.kvStore       = kvS.KvStore
+    kv.rcvdCmd       = kvS.RcvdCmd
+    kv.currentConfig = kvS.CurrentConfig
 
-    if err := d.Decode(&kv.rcvdKVCmd); err != nil {
-        panic(err)
-    }
 
     DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
 }
@@ -370,6 +357,10 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
         sendMap          = nil
         expectShardsList = nil
     } else {
+        if oldConfig.Num != newConfig.Num - 1 {
+            DPrintf("[kvserver: %v @ %v]Error: detectConfig, \nold: %v\nnew: %v\n", kv.me, kv.gid, oldConfig, newConfig)
+            panic("Cannot handle non-consecutive config changes!")
+        }
         DPrintf("[kvserver: %v @ %v]config changed\n", kv.me, kv.gid)
         isChanged = true
         for i := 0; i < shardmaster.NShards; i++ {
@@ -430,7 +421,6 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
     // send to other groups
     // TODO remove the key/value pairs
 
-    sendShards := make([]int, 0)
     for gid, shards := range sendMap {
 
         kvPairs := make(map[string]string)
@@ -443,26 +433,8 @@ func (kv *ShardKV) reconfig(args *reconfigArgs, sendMap map[int][]int) bool {
             }
         }
 
-        for _, s := range shards {
-            matchIndex := -1
-            for i, sh := range kv.shardsList {
-                if sh == s {
-                    sendShards = append(sendShards, s)
-                    matchIndex = i
-                    break
-                }
-            }
-            DPrintf("[kvserver: %v @ %v]kv.shardsList: %v, index: %v", kv.me, kv.gid, kv.shardsList, matchIndex)
-            if matchIndex != -1 {
-                kv.shardsList = append(kv.shardsList[:matchIndex], kv.shardsList[matchIndex+1:]...)
-            }
-        }
-        DPrintf("[kvserver: %v @ %v]reconfig: sendShards: %v total shards: %v, kv.shardsList: %v\n", kv.me, kv.gid, sendShards, shards, kv.shardsList)
-
-        if len(sendShards) == 0 {
-            continue
-        }
         args           := &MigrateShardsArgs{}
+        args.Num        = kv.currentConfig.Num
         args.ShardsList = shards
         args.KVPairs    = kvPairs
         args.DupDtn     = kv.rcvdCmd
@@ -492,11 +464,11 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
 
     // if is not in transition from one config to another
     // disallow shards migration operations
-    //for !kv.inTransition {
-    //    kv.mu.Unlock()
-    //    time.Sleep(5 * time.Millisecond)
-    //    kv.mu.Lock()
-    //}
+    for kv.currentConfig.Num != args.Num {
+        kv.mu.Unlock()
+        time.Sleep(5 * time.Millisecond)
+        kv.mu.Lock()
+    }
 
     // feed command to raft
     rfStateFeed := kv.feedCmd("MigrateShards", *args)
@@ -742,11 +714,12 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     labgob.Register(PutAppendArgs{})
     labgob.Register(reconfigArgs{})
     labgob.Register(MigrateShardsArgs{})
+    labgob.Register(KvState{})
 
     // store in snapshot
     kv.kvStore         = make(map[string]string)
     kv.rcvdCmd         = make(map[int64]int)
-    kv.rcvdKVCmd       = make(map[int64]int)
+    //kv.rcvdKVCmd       = make(map[int64]int)
     kv.commandNum      = 0
 
     kv.initialIndex    = 0
@@ -756,7 +729,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 	// Use something like this to talk to the shardmaster:
 	kv.mck              = shardmaster.MakeClerk(kv.masters)
     kv.inTransition     = false
-    kv.shardsList       = nil
+    kv.expectShardsList = nil
 
 	kv.applyCh = make(chan raft.ApplyMsg)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
@@ -805,15 +778,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // use Sleep for 500 ms as a solution
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
-        //var config shardmaster.Config
-        //for config.Num == 0 {
-        //    config = kv.mck.Query(1)
-        //}
-        //// send reconfig to unerlying Raft
-        //args                 := &reconfigArgs{}
-        //args.Config           = config
-        //args.ExpectShardsList = nil
-        //kv.reconfig(args, nil)
+        time.Sleep(100 * time.Millisecond)
         for {
             select {
             case <-kv.shutdown:
@@ -828,8 +793,11 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                     time.Sleep(50 * time.Millisecond)
                     continue
                 }
+                kv.mu.Lock()
                 DPrintf("[kvserver: %v @ %v]polling master for config, currentConfig: %v\n", kv.me, kv.gid, kv.currentConfig)
-                config := kv.mck.Query(kv.currentConfig.Num + 1)
+                queryNum := kv.currentConfig.Num + 1
+                kv.mu.Unlock()
+                config := kv.mck.Query(queryNum)
                 isChanged, sendMap, expectShardsList := kv.detectConfig(kv.currentConfig, config)
                 if isChanged {
                     // send reconfig to unerlying Raft

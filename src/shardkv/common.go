@@ -57,6 +57,7 @@ type reconfigArgs struct {
 }
 
 type MigrateShardsArgs struct {
+    Num        int
     ShardsList []int
     KVPairs    map[string]string
     DupDtn     map[int64]int
@@ -67,4 +68,10 @@ type MigrateShardsArgs struct {
 type MigrateShardsReply struct {
     WrongLeader bool
     Err         Err
+}
+
+type KvState struct {
+    KvStore        map[string]string
+    RcvdCmd        map[int64]int
+    CurrentConfig  shardmaster.Config
 }

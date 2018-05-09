@@ -9,6 +9,7 @@ import "fmt"
 import "sync/atomic"
 import "sync"
 import "math/rand"
+import "log"
 
 const linearizabilityCheckTimeout = 1 * time.Second
 
@@ -207,6 +208,7 @@ func TestSnapshot(t *testing.T) {
 	cfg.ShutdownGroup(1)
 	cfg.ShutdownGroup(2)
 
+    log.Printf("restart groups")
 	cfg.StartGroup(0)
 	cfg.StartGroup(1)
 	cfg.StartGroup(2)
