@@ -302,9 +302,10 @@ func (kv *ShardKV) checkLogSize(persister *raft.Persister, lastIndex int) {
     if kv.maxraftstate != -1 && persister.RaftStateSize() > kv.maxraftstate {
         // snapshot
         kvState   := KvState{
-            KvStore       : kv.kvStore,
-            RcvdCmd       : kv.rcvdCmd,
-            CurrentConfig : kv.currentConfig}
+            KvStore          : kv.kvStore,
+            RcvdCmd          : kv.rcvdCmd,
+            CurrentConfig    : kv.currentConfig,
+            ExpectShardsList : kv.expectShardsList}
         snapshotStruct := raft.SnapshotData{
             KvState: kvState}
 
@@ -338,9 +339,10 @@ func (kv *ShardKV) buildState(data []byte) {
     }
 
     kvS        := snapshotData.KvState.(KvState)
-    kv.kvStore       = kvS.KvStore
-    kv.rcvdCmd       = kvS.RcvdCmd
-    kv.currentConfig = kvS.CurrentConfig
+    kv.kvStore          = kvS.KvStore
+    kv.rcvdCmd          = kvS.RcvdCmd
+    kv.currentConfig    = kvS.CurrentConfig
+    kv.expectShardsList = kvS.ExpectShardsList
 
 
     DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v\n", kv.me, kv.gid, kv.kvStore)

@@ -71,7 +71,8 @@ type MigrateShardsReply struct {
 }
 
 type KvState struct {
-    KvStore        map[string]string
-    RcvdCmd        map[int64]int
-    CurrentConfig  shardmaster.Config
+    KvStore           map[string]string
+    RcvdCmd           map[int64]int
+    CurrentConfig     shardmaster.Config
+    ExpectShardsList  []int
 }
