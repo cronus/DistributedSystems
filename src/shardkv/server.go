@@ -88,7 +88,13 @@ type rfState struct {
 func (kv *ShardKV) isInGroup(key string) bool {
     var inGroup bool
     if kv.inTransition {
-        inGroup = false
+        for _, shard := range kv.expectShardsList {
+            if key2shard(key) == shard {
+                return false
+            }
+        }
+        keyShardIndex := key2shard(key)
+        inGroup = (kv.gid == kv.currentConfig.Shards[keyShardIndex])
     } else {
         keyShardIndex := key2shard(key)
         inGroup = (kv.gid == kv.currentConfig.Shards[keyShardIndex])
@@ -513,6 +519,27 @@ func (kv *ShardKV) sendMigrateShards(tGid int, args *MigrateShardsArgs) {
             reply := new(MigrateShardsReply)
             ok := srv.Call("ShardKV.MigrateShards", args, reply)
             if ok && reply.WrongLeader == false && reply.Err == OK {
+
+                kv.mu.Lock()
+                DPrintf("[kvserver: %v @ %v]Before delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
+                // delete all the keys in args.ShardsList
+                // get all the keys in map
+                allKeys := make([]string, 0)
+                for k, _ := range kv.kvStore {
+                    allKeys = append(allKeys, k)
+                }
+                // check the key is in args.ShardsList
+                // if in, then delete from kv.kvStroe
+                for _, shard := range args.ShardsList {
+                    for _, key := range allKeys {
+                        if key2shard(key) == shard {
+                            delete(kv.kvStore, key)
+                        }
+                    }
+                }
+                DPrintf("[kvserver: %v @ %v]After delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
+                kv.mu.Unlock()
+
                 return
             }
             if ok && reply.Err == ErrWrongGroup {
@@ -778,6 +805,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // use Sleep for 500 ms as a solution
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
+        // wait for log replay done, if any
         time.Sleep(100 * time.Millisecond)
         for {
             select {
@@ -795,10 +823,22 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                 }
                 kv.mu.Lock()
                 DPrintf("[kvserver: %v @ %v]polling master for config, currentConfig: %v\n", kv.me, kv.gid, kv.currentConfig)
+                currentConfig := kv.currentConfig
                 queryNum := kv.currentConfig.Num + 1
                 kv.mu.Unlock()
+		        time.Sleep(100 * time.Millisecond)
+
+                // if kv.currentConfig.Num is not changed due to log replay after 100 ms
+                // assume log replay is done
+                kv.mu.Lock()
+                if kv.currentConfig.Num != currentConfig.Num {
+                    DPrintf("[kvserver: %v @ %v]currentConfig is updated due to log replay, old: %v, new: %v\n", kv.me, kv.gid, currentConfig, kv.currentConfig)
+                    kv.mu.Unlock()
+                    continue
+                }
+                kv.mu.Unlock()
                 config := kv.mck.Query(queryNum)
-                isChanged, sendMap, expectShardsList := kv.detectConfig(kv.currentConfig, config)
+                isChanged, sendMap, expectShardsList := kv.detectConfig(currentConfig, config)
                 if isChanged {
                     // send reconfig to unerlying Raft
                     args                 := &reconfigArgs{}
@@ -810,7 +850,6 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                         panic("reconfig failed")
                     }
                 }
-		        time.Sleep(100 * time.Millisecond)
 		    }
         }
     }(kv)
