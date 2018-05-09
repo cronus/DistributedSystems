@@ -1,0 +1,11 @@
+#!/bin/bash
+rm -rf a
+for iter in {1..100}
+do
+    echo "Iteration" ${iter} | tee -a a
+    go test 2>./log/a_${iter} |tee -a a
+    if grep -q "FAIL" a; then
+        echo "Found failed case"
+        exit
+    fi
+done

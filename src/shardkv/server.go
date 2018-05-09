@@ -58,7 +58,7 @@ type ShardKV struct {
 
     // need to initial when is the Leader
     initialIndex    int
-    rfStateChBuffer []chan rfState
+    rtnChBuffer     []chan rtnMsg
 
     // for shutdown
     shutdown chan struct{}
@@ -71,8 +71,14 @@ type rfState struct {
     Err      Err
 }
 
+type rtnMsg struct {
+    rfState rfState
+    Err     Err
+    Value   string
+}
+
 // function to check a key is ready during transition
-// TODO more fine check, 
+//     more fine check,  for challenge2
 //     1. to allow irrelevant key to proceceed
 //     2. to allow received key to proceed
 //func (kv *ShardKV) isReady(key string) bool {
@@ -143,15 +149,14 @@ func (kv *ShardKV) feedCmd(name string, args interface{}) rfState {
 
     index, term, isLeader := kv.rf.Start(op)
 
-    if len(kv.rfStateChBuffer) == 0 {
+    if len(kv.rtnChBuffer) == 0 {
         kv.initialIndex = index
     }
 
     state = rfState {
         index    : index,
         term     : term,
-        isLeader : isLeader,
-        Err      : OK}
+        isLeader : isLeader}
 
     defer DPrintf("[kvserver: %v @ %v]%v, args: %v state: %v\n", kv.me, kv.gid, name, args, state)
     return state
@@ -178,16 +183,31 @@ func (kv *ShardKV) checkRfState(oldState rfState, newState rfState) bool {
     return sameState
 }
 
-func (kv *ShardKV) applyCmd(command Op) Err {
+func (kv *ShardKV) applyCmd(command Op) (string, Err) {
 
     DPrintf("[kvserver: %v @ %v]Apply command: %v", kv.me, kv.gid, command)
 
+    var value string
     var Err Err
+    value = ""
     Err = OK
 
     // duplicated command detection
     if num, ok := kv.rcvdCmd[command.ClerkId]; ok && num == command.CommandNum {
         DPrintf("[kvserver: %v @ %v]%v, command %v is already committed.\n", kv.me, kv.gid, command.Name, command)
+        
+        if command.Name == "Get" {
+            args := command.Args.(GetArgs)
+
+            // get value for Get command
+            if v, exist := kv.kvStore[args.Key]; exist {
+                Err   = OK
+                value = v
+            } else {
+                Err   = ErrNoKey
+                value = ""
+            }
+        }
     } else {
         switch command.Name {
         case "PutAppend":
@@ -195,7 +215,7 @@ func (kv *ShardKV) applyCmd(command Op) Err {
 
             if !kv.isInGroup(args.Key) {
                 Err = ErrWrongGroup
-                return Err
+                return value, Err
             }
 
             switch args.Op {
@@ -210,8 +230,18 @@ func (kv *ShardKV) applyCmd(command Op) Err {
             args := command.Args.(GetArgs)
             if !kv.isInGroup(args.Key) {
                 Err = ErrWrongGroup
-                return Err
+                return value, Err
             }
+
+            // get value for Get command
+            if v, exist := kv.kvStore[args.Key]; exist {
+                Err   = OK
+                value = v
+            } else {
+                Err   = ErrNoKey
+                value = ""
+            }
+
             kv.rcvdCmd[command.ClerkId] = command.CommandNum
         }
     }
@@ -321,7 +351,7 @@ func (kv *ShardKV) applyCmd(command Op) Err {
         //}
     }
 
-    return Err
+    return value, Err
 }
 
 func (kv *ShardKV) checkLogSize(persister *raft.Persister, lastIndex int) {
@@ -438,7 +468,7 @@ func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmas
 func (kv *ShardKV) reconfig(args *reconfigArgs) bool {
 
     DPrintf("[kvserver: %v @ %v]reconfig, args: %v\n", kv.me, kv.gid, args)
-    rfStateCh := make(chan rfState)
+    rtnMsgCh := make(chan rtnMsg)
     
     kv.mu.Lock()
 
@@ -450,14 +480,14 @@ func (kv *ShardKV) reconfig(args *reconfigArgs) bool {
     }
 
     // add command channel to fifo
-    kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
+    kv.rtnChBuffer = append(kv.rtnChBuffer, rtnMsgCh)
 
     kv.mu.Unlock()
 
-    rfStateApplied :=<- rfStateCh
+    rtnMsgApplied :=<- rtnMsgCh
     DPrintf("[kvserver: %v @ %v]reconfig, receive applied command\n", kv.me, kv.gid)
 
-    sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
+    sameState := kv.checkRfState(rfStateFeed, rtnMsgApplied.rfState)
 
     if !sameState {
         return false
@@ -465,7 +495,6 @@ func (kv *ShardKV) reconfig(args *reconfigArgs) bool {
 
     kv.mu.Lock()
     // send to other groups
-    // TODO remove the key/value pairs
 
     for gid, shards := range args.SendMap {
 
@@ -506,7 +535,7 @@ func (kv *ShardKV) reconfig(args *reconfigArgs) bool {
 
 func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsReply) {
 
-    rfStateCh := make(chan rfState)
+    rtnMsgCh := make(chan rtnMsg)
 
     kv.mu.Lock()
 
@@ -529,15 +558,15 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
     }
 
     // add command channel to fifo
-    kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
+    kv.rtnChBuffer = append(kv.rtnChBuffer, rtnMsgCh)
 
     kv.mu.Unlock()
 
-    rfStateApplied :=<- rfStateCh
+    rtnMsgApplied :=<- rtnMsgCh
     DPrintf("[kvserver: %v @ %v]MigrateShards, receive applied command\n", kv.me, kv.gid)
 
     // handle reply
-    sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
+    sameState := kv.checkRfState(rfStateFeed, rtnMsgApplied.rfState)
 
     if sameState {
         reply.Err = OK
@@ -574,7 +603,7 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
     defer DPrintf("[kvserver: %v @ %v]Get args: %v, reply: %v\n", kv.me, kv.gid, args, reply)
 
-    rfStateCh := make(chan rfState)
+    rtnMsgCh := make(chan rtnMsg)
 
     kv.mu.Lock()
 
@@ -589,10 +618,10 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     }
 
     // add command channel to fifo
-    kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
+    kv.rtnChBuffer = append(kv.rtnChBuffer, rtnMsgCh)
     kv.mu.Unlock()
 
-    rfStateApplied :=<- rfStateCh
+    rtnMsgApplied :=<- rtnMsgCh
     DPrintf("[kvserver: %v @ %v]Get, receive applied command\n", kv.me, kv.gid)
 
     kv.mu.Lock()
@@ -611,14 +640,14 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     //    return
     //}
 
-    if rfStateApplied.Err == ErrWrongGroup {
+    if rtnMsgApplied.Err == ErrWrongGroup {
         reply.Err = ErrWrongGroup
         kv.mu.Unlock()
         return
     }
 
     // handle reply
-    sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
+    sameState := kv.checkRfState(rfStateFeed, rtnMsgApplied.rfState)
 
     kv.mu.Unlock()
 
@@ -630,20 +659,22 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
     }
 
     // get value for read command
-    if value, exist := kv.kvStore[args.Key]; exist {
-        reply.Err   = OK
-        reply.Value = value
-    } else {
-        reply.Err   = ErrNoKey
-        reply.Value = ""
-    }
+    //if value, exist := kv.kvStore[args.Key]; exist {
+    //    reply.Err   = OK
+    //    reply.Value = value
+    //} else {
+    //    reply.Err   = ErrNoKey
+    //    reply.Value = ""
+    //}
+    reply.Err   = rtnMsgApplied.Err
+    reply.Value = rtnMsgApplied.Value
 }
 
 func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
     defer DPrintf("[kvserver: %v @ %v]PutAppend args: %v, reply: %v\n", kv.me, kv.gid, args, reply)
 
-    rfStateCh := make(chan rfState)
+    rtnMsgCh := make(chan rtnMsg)
 
     kv.mu.Lock()
 
@@ -658,10 +689,10 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     }
 
     // add command channel to fifo
-    kv.rfStateChBuffer = append(kv.rfStateChBuffer, rfStateCh)
+    kv.rtnChBuffer = append(kv.rtnChBuffer, rtnMsgCh)
     kv.mu.Unlock()
 
-    rfStateApplied :=<- rfStateCh
+    rtnMsgApplied :=<- rtnMsgCh
     DPrintf("[kvserver: %v @ %v]PutAppend, receive applied command\n", kv.me, kv.gid)
 
     kv.mu.Lock()
@@ -680,14 +711,14 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
     //    return
     //}
 
-    if rfStateApplied.Err == ErrWrongGroup {
+    if rtnMsgApplied.Err == ErrWrongGroup {
         reply.Err = ErrWrongGroup
         kv.mu.Unlock()
         return
     }
 
     // handle reply
-    sameState := kv.checkRfState(rfStateFeed, rfStateApplied)
+    sameState := kv.checkRfState(rfStateFeed, rtnMsgApplied.rfState)
     
     kv.mu.Unlock()
 
@@ -773,7 +804,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     kv.kvStoreBackup     = nil
 
     kv.initialIndex    = 0
-    kv.rfStateChBuffer = make([]chan rfState, 0)
+    kv.rtnChBuffer     = make([]chan rtnMsg, 0)
     kv.shutdown        = make(chan struct{})
 
 	// Use something like this to talk to the shardmaster:
@@ -792,25 +823,30 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
             default:
                 if msg.CommandValid { 
                     var rfStateApplied rfState
-                    var rfStateCh chan rfState
+                    var rtnMsgApplied rtnMsg
+                    var rtnMsgCh chan rtnMsg
                     applyIndex := msg.CommandIndex
                     kv.mu.Lock()
                     op  := msg.Command.(Op)
-                    Err := kv.applyCmd(op)
+                    value, Err := kv.applyCmd(op)
                     kv.checkLogSize(persister, applyIndex)
 
                     // drain the rfState channel if not empty
-                    if len(kv.rfStateChBuffer) > 0  && kv.initialIndex <= applyIndex {
+                    if len(kv.rtnChBuffer) > 0  && kv.initialIndex <= applyIndex {
                         applyTerm, applyIsLeader := kv.rf.GetState()
                         rfStateApplied = rfState {
                             index    : applyIndex,
                             term     : applyTerm,
                             isLeader : applyIsLeader,
                             Err      : Err}
+                        rtnMsgApplied = rtnMsg {
+                            rfState : rfStateApplied,
+                            Err     : Err,
+                            Value   : value}
                         
-                        rfStateCh, kv.rfStateChBuffer = kv.rfStateChBuffer[0], kv.rfStateChBuffer[1:]
-                        DPrintf("[kvserver: %v @ %v]drain the command to channel, %v\n", kv.me, kv.gid, rfStateApplied)
-                        rfStateCh <- rfStateApplied
+                        rtnMsgCh, kv.rtnChBuffer = kv.rtnChBuffer[0], kv.rtnChBuffer[1:]
+                        DPrintf("[kvserver: %v @ %v]drain the command to channel, %v\n", kv.me, kv.gid, rtnMsgApplied)
+                        rtnMsgCh <- rtnMsgApplied
                     }
                     kv.mu.Unlock()
                 } else {
