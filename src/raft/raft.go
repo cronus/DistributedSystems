@@ -398,9 +398,11 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
     DPrintf("[Enter RequestVote][server: %v]term :%v voted for:%v, log len: %v, logs: %v, commitIndex: %v, received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, len(rf.logs), rf.logs, rf.commitIndex, args)
     // 1. false if term < currentTerm
     if args.Term < rf.currentTerm {
+        reply.Term         = rf.currentTerm
         reply.VoteGranted  = false
     } else if args.Term > rf.currentTerm {
         rf.votedFor = NULL
+        reply.Term  = rf.currentTerm
         // need to update follower's term if received candidate RequestVote RPC
         // scenario:
         // [0, 1, 2, 3, 4] all commit to 10, leader 1, term 1
@@ -412,6 +414,8 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
         // [0] rejoin, will become leader, which is not expected
         rf.currentTerm    = args.Term
         rf.state          = "Follower"
+    } else {
+        reply.Term  = rf.currentTerm
     }
 
     // 2. votedFor is null or candidateId and
@@ -424,7 +428,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
                 ((args.LastLogTerm == rf.logs[len(rf.logs) - 1].LogTerm) && 
                 (args.LastLogIndex >= rf.p2v(len(rf.logs) - 1)))) {
         DPrintf("[RequestVote][server: %v]term :%v voted for:%v, logs: %v, commitIndex: %v, received RequestVote: %v\n", rf.me, rf.currentTerm, rf.votedFor, rf.logs, rf.commitIndex, args)
-        reply.Term        = rf.currentTerm 
+        //reply.Term        = rf.currentTerm 
         reply.VoteGranted = true
         rf.votedFor       = args.CandidateId
         if !rf.t.Stop() {
@@ -907,6 +911,21 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                 if ok && reply.VoteGranted {
                                     replyChan <- reply
                                 } else {
+                                    rf.mu.Lock()
+                                    if reply.Term > rf.currentTerm {
+                                        rf.state = "Follower"
+                                        rf.currentTerm = reply.Term
+
+                                        // reset timer 
+                                        if !rf.t.Stop() {
+                                            DPrintf("[server: %v]Leader change to follower1: drain timer\n", rf.me)
+                                            <- rf.t.C
+                                        }
+                                        timeout := time.Duration(500 + rand.Int31n(400))
+                                        rf.t.Reset(timeout * time.Millisecond)
+
+                                    }
+                                    rf.mu.Unlock()
                                     reply.VoteGranted = false
                                     replyChan <- reply
                                 }
