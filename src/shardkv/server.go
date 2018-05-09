@@ -242,7 +242,13 @@ func (kv *ShardKV) applyCmd(command Op) Err {
         // copy the keys to kv.kvStore
         DPrintf("[kvserver: %v @ %v]Before migration, kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
         for key, value := range args.KVPairs {
-            kv.kvStore[key] = value
+            // check the shard containing the key still in the kv.expectShardsList
+            // at-most-once semantics
+            for _, shard := range kv.expectShardsList {
+                if key2shard(key) == shard {
+                    kv.kvStore[key] = value
+                }
+            }
         }
         DPrintf("[kvserver: %v @ %v]After migration, new kvstore: %v\n", kv.me, kv.gid, kv.kvStore)
 
