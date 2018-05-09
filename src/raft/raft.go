@@ -1158,12 +1158,14 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                         pPrevLogIndex, ntInSnp = rf.v2p(firstTermIndex - 1)
                                         forceAppendEntriesArgs := new(AppendEntriesArgs)
                                         if ntInSnp {
+                                            appendEntries := make([]LogEntry, 0)
+                                            appendEntries = append(appendEntries, rf.logs[pPrevLogIndex + 1 : ]...)
                                             forceAppendEntriesArgs = &AppendEntriesArgs{
                                                 Term         : rf.currentTerm,
                                                 LeaderId     : rf.me,
                                                 PrevLogIndex : firstTermIndex - 1,
                                                 PrevLogTerm  : rf.logs[pPrevLogIndex].LogTerm,
-                                                Entries      : rf.logs[pPrevLogIndex + 1 : ],
+                                                Entries      : appendEntries,
                                                 LeaderCommit : rf.commitIndex}
                                         } else {
                                                 DPrintf("[server: %v]index is in snapshot: %v\n", rf.me, firstTermIndex)
