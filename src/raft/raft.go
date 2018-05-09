@@ -561,7 +561,12 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
             }
         }
     } else {
-        panic("unexptected postion, 5\n")
+        DPrintf("[server: %v]lastIncludedIndex: %v follower receives AppendEntries from Leader with PrevLogIndex in snapshot, %v\n", rf.me, rf.lastIncludedIndex, args.PrevLogIndex)
+        reply.Term = rf.currentTerm
+        reply.Success = false
+        rf.currentTerm = args.Term
+        return
+        //panic("unexptected postion, 5\n")
     }
 
     // 4. append any new entries not already in the log
@@ -1198,6 +1203,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
                                                 rf.mu.Unlock()
                                                 return
                                             } else {
+                                                if !forceReply.Success {
+                                                    rf.mu.Unlock()
+                                                    return
+                                                }
                                                 //rf.nextIndex[server]  = rf.p2v(len(rf.logs) - 1) + 1
                                                 rf.matchIndex[server] = forceAppendEntriesArgs.PrevLogIndex + len(forceAppendEntriesArgs.Entries)
                                                 DPrintf("[server: %v]successfully append entries: %v, rf.nextIndex: %v\n", rf.me, forceReply, rf.nextIndex)

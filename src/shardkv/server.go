@@ -526,25 +526,25 @@ func (kv *ShardKV) sendMigrateShards(tGid int, args *MigrateShardsArgs) {
             ok := srv.Call("ShardKV.MigrateShards", args, reply)
             if ok && reply.WrongLeader == false && reply.Err == OK {
 
-                kv.mu.Lock()
-                DPrintf("[kvserver: %v @ %v]Before delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
-                // delete all the keys in args.ShardsList
-                // get all the keys in map
-                allKeys := make([]string, 0)
-                for k, _ := range kv.kvStore {
-                    allKeys = append(allKeys, k)
-                }
-                // check the key is in args.ShardsList
-                // if in, then delete from kv.kvStroe
-                for _, shard := range args.ShardsList {
-                    for _, key := range allKeys {
-                        if key2shard(key) == shard {
-                            delete(kv.kvStore, key)
-                        }
-                    }
-                }
-                DPrintf("[kvserver: %v @ %v]After delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
-                kv.mu.Unlock()
+                //kv.mu.Lock()
+                //DPrintf("[kvserver: %v @ %v]Before delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
+                //// delete all the keys in args.ShardsList
+                //// get all the keys in map
+                //allKeys := make([]string, 0)
+                //for k, _ := range kv.kvStore {
+                //    allKeys = append(allKeys, k)
+                //}
+                //// check the key is in args.ShardsList
+                //// if in, then delete from kv.kvStroe
+                //for _, shard := range args.ShardsList {
+                //    for _, key := range allKeys {
+                //        if key2shard(key) == shard {
+                //            delete(kv.kvStore, key)
+                //        }
+                //    }
+                //}
+                //DPrintf("[kvserver: %v @ %v]After delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
+                //kv.mu.Unlock()
 
                 return
             }
