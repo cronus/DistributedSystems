@@ -1282,6 +1282,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
                 }
 
                 if rf.lastApplied < rf.commitIndex  && rf.commitIndex > rf.lastIncludedIndex {
+                    // persist only when possible committed data
+                    // for leader, it's easy to determine
+                    // persist leader during commit
+                    if rf.state == "Leader" {
+                        rf.persist()
+                    }
                     DPrintf("[server: %v]lastApplied: %v, commitIndex: %v\n", rf.me, rf.lastApplied, rf.commitIndex);
                     for rf.lastApplied < rf.commitIndex {
                         rf.lastApplied++
@@ -1295,12 +1301,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
                         rf.mu.Unlock()
                         applyCh <- applyMsg
                         rf.mu.Lock()
-                    }
-                    // persist only when possible committed data
-                    // for leader, it's easy to determine
-                    // persist leader during commit
-                    if rf.state == "Leader" {
-                        rf.persist()
                     }
                 }
                 rf.cond.Wait()

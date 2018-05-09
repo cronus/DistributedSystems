@@ -883,9 +883,10 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                 kv.mu.Lock()
                 DPrintf("[kvserver: %v @ %v]polling master for config, currentConfig: %v\n", kv.me, kv.gid, kv.currentConfig)
                 currentConfig := kv.currentConfig
-                queryNum := kv.currentConfig.Num + 1
+                queryNum      := kv.currentConfig.Num + 1
                 kv.mu.Unlock()
 		        time.Sleep(100 * time.Millisecond)
+                config := kv.mck.Query(queryNum)
 
                 // if kv.currentConfig.Num is not changed due to log replay after 100 ms
                 // assume log replay is done
@@ -893,10 +894,10 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                 if kv.currentConfig.Num != currentConfig.Num {
                     DPrintf("[kvserver: %v @ %v]currentConfig is updated due to log replay, old: %v, new: %v\n", kv.me, kv.gid, currentConfig, kv.currentConfig)
                     kv.mu.Unlock()
+                    time.Sleep(500 * time.Millisecond)
                     continue
                 }
                 kv.mu.Unlock()
-                config := kv.mck.Query(queryNum)
                 isChanged, sendMap, expectShardsList := kv.detectConfig(currentConfig, config)
                 if isChanged {
                     // send reconfig to unerlying Raft
