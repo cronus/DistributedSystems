@@ -272,6 +272,7 @@ func (kv *ShardKV) applyCmd(command Op) (string, Err) {
             for gid, shards := range args.SendMap {
 
                 kvPairs := make(map[string]string)
+                dupDtn  := make(map[int64]int)
                 // find all the keys related to the gid and args.sendMap[gid]
                 for _, shard := range shards {
                     for key, value := range kv.kvStore {
@@ -280,12 +281,15 @@ func (kv *ShardKV) applyCmd(command Op) (string, Err) {
                         }
                     }
                 }
+                for k, v := range kv.rcvdCmd {
+                    dupDtn[k] = v
+                }
 
                 args           := &MigrateShardsArgs{}
                 args.Num        = kv.currentConfig.Num
                 args.ShardsList = shards
                 args.KVPairs    = kvPairs
-                args.DupDtn     = kv.rcvdCmd
+                args.DupDtn     = dupDtn
                 args.ClerkId    = int64(kv.gid)
                 args.CommandNum = kv.commandNum
 
