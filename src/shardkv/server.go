@@ -867,8 +867,15 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
 
-        // wait for a leader
-        time.Sleep(500 * time.Millisecond)
+        for {
+            _, isLeader := kv.rf.GetState()
+            if !isLeader {
+		        time.Sleep(500 * time.Millisecond)
+                continue
+            } else {
+                break
+            }
+        }
         // use a Get command to indicate log replay is done
         // don't care result
         getArgs := GetArgs{}
@@ -881,11 +888,6 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
             case <-kv.shutdown:
                 return
             default:
-                _, isLeader := kv.rf.GetState()
-                if !isLeader {
-		            time.Sleep(500 * time.Millisecond)
-                    continue
-                }
                 if kv.inTransition {
                     time.Sleep(50 * time.Millisecond)
                     continue
