@@ -721,6 +721,9 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
         DPrintf("[server: %v]appendEntriesArgs entry: %v\n", rf.me, *logEntry)
 
+        // persist log when receiving it
+        rf.persist()
+
         appendEntriesArgs  := make([]*AppendEntriesArgs, len(rf.peers))
         appendEntriesReply := make([]*AppendEntriesReply, len(rf.peers))
 
@@ -1301,12 +1304,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
                 }
 
                 if rf.lastApplied < rf.commitIndex  && rf.commitIndex > rf.lastIncludedIndex {
-                    // persist only when possible committed data
-                    // for leader, it's easy to determine
-                    // persist leader during commit
-                    if rf.state == "Leader" {
-                        rf.persist()
-                    }
                     DPrintf("[server: %v]lastApplied: %v, commitIndex: %v\n", rf.me, rf.lastApplied, rf.commitIndex);
                     for rf.lastApplied < rf.commitIndex {
                         rf.lastApplied++
