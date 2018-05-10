@@ -407,7 +407,7 @@ func (kv *ShardKV) buildState(data []byte) {
     kv.inTransition     = kvS.InTransition
 
 
-    DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v, kv.currentConfig: %v, kv.expectedShardsList, kv.inTransition: %v\n", kv.me, kv.gid, kv.kvStore, kv.currentConfig, kv.expectShardsList, kv.inTransition)
+    DPrintf("[kvserver: %v @ %v]After build kvServer state: kvstore: %v, kv.currentConfig: %v, kv.expectedShardsList: %v, kv.inTransition: %v\n", kv.me, kv.gid, kv.kvStore, kv.currentConfig, kv.expectShardsList, kv.inTransition)
 }
 
 func (kv *ShardKV) detectConfig(oldConfig shardmaster.Config, newConfig shardmaster.Config) (bool, map[int][]int, []int) {
@@ -865,7 +865,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
         // wait for log replay done, if any
-        time.Sleep(8000 * time.Millisecond)
+        time.Sleep(100 * time.Millisecond)
         for {
             select {
             case <-kv.shutdown:
