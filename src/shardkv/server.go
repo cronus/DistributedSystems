@@ -860,12 +860,22 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
         }
     }(kv)
 
+    kv.buildState(persister.ReadSnapshot())
+
     // leader is responsible for polling config
     // use Sleep for 500 ms as a solution
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
-        // wait for log replay done, if any
-        time.Sleep(100 * time.Millisecond)
+
+        // wait for a leader
+        time.Sleep(500 * time.Millisecond)
+        // use a Get command to indicate log replay is done
+        // don't care result
+        getArgs := GetArgs{}
+        getArgs.Key = "no-op"
+        getReply := new(GetReply)
+        kv.Get(&getArgs, getReply)
+
         for {
             select {
             case <-kv.shutdown:
@@ -885,19 +895,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                 currentConfig := kv.currentConfig
                 queryNum      := kv.currentConfig.Num + 1
                 kv.mu.Unlock()
-		        time.Sleep(100 * time.Millisecond)
                 config := kv.mck.Query(queryNum)
-
-                // if kv.currentConfig.Num is not changed due to log replay after 100 ms
-                // assume log replay is done
-                kv.mu.Lock()
-                if kv.currentConfig.Num != currentConfig.Num {
-                    DPrintf("[kvserver: %v @ %v]currentConfig is updated due to log replay, old: %v, new: %v\n", kv.me, kv.gid, currentConfig, kv.currentConfig)
-                    kv.mu.Unlock()
-                    time.Sleep(500 * time.Millisecond)
-                    continue
-                }
-                kv.mu.Unlock()
                 isChanged, sendMap, expectShardsList := kv.detectConfig(currentConfig, config)
                 if isChanged {
                     // send reconfig to unerlying Raft
@@ -915,10 +913,9 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                     //}
                 }
 		    }
+		    time.Sleep(100 * time.Millisecond)
         }
     }(kv)
-
-    kv.buildState(persister.ReadSnapshot())
 
 	return kv
 }
