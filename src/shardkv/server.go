@@ -54,7 +54,7 @@ type ShardKV struct {
     commandNum int
 
     // kvStoreBackup for garbage collection
-    kvStoreBackup map[string]string
+    //kvStoreBackup map[string]string
 
     // need to initial when is the Leader
     initialIndex    int
@@ -266,11 +266,45 @@ func (kv *ShardKV) applyCmd(command Op) (string, Err) {
             }
         }
 
-        // copy kv.kvstore to kv.kvStoreBackup
-        kv.kvStoreBackup = make(map[string]string)
-        for k, v := range kv.kvStore {
-            kv.kvStoreBackup[k] = v
+        _, isLeader := kv.rf.GetState()
+        if isLeader {
+            // send to other groups
+            for gid, shards := range args.SendMap {
+
+                kvPairs := make(map[string]string)
+                // find all the keys related to the gid and args.sendMap[gid]
+                for _, shard := range shards {
+                    for key, value := range kv.kvStore {
+                        if shard == key2shard(key) {
+                            kvPairs[key] = value
+                        }
+                    }
+                }
+
+                args           := &MigrateShardsArgs{}
+                args.Num        = kv.currentConfig.Num
+                args.ShardsList = shards
+                args.KVPairs    = kvPairs
+                args.DupDtn     = kv.rcvdCmd
+                args.ClerkId    = int64(kv.gid)
+                args.CommandNum = kv.commandNum
+
+                kv.commandNum++
+
+                DPrintf("[kvserver: %v @ %v]args send to other groups: %v\n", kv.me, kv.gid, args)
+
+                //reply := new(MigrateShardsReply)
+
+                go kv.sendMigrateShards(gid, args)
+            }
+
         }
+
+        //// copy kv.kvstore to kv.kvStoreBackup
+        //kv.kvStoreBackup = make(map[string]string)
+        //for k, v := range kv.kvStore {
+        //    kv.kvStoreBackup[k] = v
+        //}
 
         DPrintf("[kvserver: %v @ %v]Before delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
         // delete all the keys in args.ShardsList
@@ -493,41 +527,6 @@ func (kv *ShardKV) reconfig(args *reconfigArgs) bool {
         return false
     }
 
-    kv.mu.Lock()
-    // send to other groups
-
-    for gid, shards := range args.SendMap {
-
-        kvPairs := make(map[string]string)
-        // find all the keys related to the gid and args.sendMap[gid]
-        for _, shard := range shards {
-            for key, value := range kv.kvStoreBackup {
-                if shard == key2shard(key) {
-                    kvPairs[key] = value
-                }
-            }
-        }
-
-        args           := &MigrateShardsArgs{}
-        args.Num        = kv.currentConfig.Num
-        args.ShardsList = shards
-        args.KVPairs    = kvPairs
-        args.DupDtn     = kv.rcvdCmd
-        args.ClerkId    = int64(kv.gid)
-        args.CommandNum = kv.commandNum
-
-        kv.commandNum++
-
-        DPrintf("[kvserver: %v @ %v]args send to other groups: %v\n", kv.me, kv.gid, args)
-
-        //reply := new(MigrateShardsReply)
-
-        go kv.sendMigrateShards(gid, args)
-    }
-
-    kv.kvStoreBackup = nil
-
-    kv.mu.Unlock()
 
     return true
 }
@@ -539,9 +538,14 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
 
     kv.mu.Lock()
 
-    // if is not in transition from one config to another
-    // disallow shards migration operations
-    for kv.currentConfig.Num != args.Num {
+    // if a old Migrateshards received, reply OK
+    if kv.currentConfig.Num > args.Num {
+        reply.Err = OK
+        kv.mu.Unlock()
+        return
+    }
+    // if not in the transition, wait
+    for kv.currentConfig.Num < args.Num {
         kv.mu.Unlock()
         time.Sleep(5 * time.Millisecond)
         kv.mu.Lock()
@@ -801,7 +805,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     //kv.rcvdKVCmd       = make(map[int64]int)
     kv.commandNum      = 0
 
-    kv.kvStoreBackup     = nil
+    //kv.kvStoreBackup     = nil
 
     kv.initialIndex    = 0
     kv.rtnChBuffer     = make([]chan rtnMsg, 0)
@@ -888,11 +892,13 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
             case <-kv.shutdown:
                 return
             default:
+                kv.mu.Lock()
                 if kv.inTransition {
+                    DPrintf("[kvserver: %v @ %v]inTransition state", kv.me, kv.gid)
+                    kv.mu.Unlock()
                     time.Sleep(50 * time.Millisecond)
                     continue
                 }
-                kv.mu.Lock()
                 DPrintf("[kvserver: %v @ %v]polling master for config, currentConfig: %v\n", kv.me, kv.gid, kv.currentConfig)
                 currentConfig := kv.currentConfig
                 queryNum      := kv.currentConfig.Num + 1
