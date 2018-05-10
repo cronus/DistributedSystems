@@ -896,6 +896,11 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
             case <-kv.shutdown:
                 return
             default:
+                _, isLeader := kv.rf.GetState()
+                if !isLeader {
+		            time.Sleep(500 * time.Millisecond)
+                    continue
+                }
                 kv.mu.Lock()
                 if kv.inTransition {
                     DPrintf("[kvserver: %v @ %v]inTransition state", kv.me, kv.gid)
