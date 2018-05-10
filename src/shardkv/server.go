@@ -865,7 +865,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
     // a better solution could be condition variable Wait and Broadcast()
     go func(kv *ShardKV) {
         // wait for log replay done, if any
-        time.Sleep(5000 * time.Millisecond)
+        time.Sleep(8000 * time.Millisecond)
         for {
             select {
             case <-kv.shutdown:
