@@ -196,8 +196,22 @@ func (kv *ShardKV) applyCmd(command Op) (string, Err) {
     if num, ok := kv.rcvdCmd[command.ClerkId]; ok && num == command.CommandNum {
         DPrintf("[kvserver: %v @ %v]%v, command %v is already committed.\n", kv.me, kv.gid, command.Name, command)
         
-        if command.Name == "Get" {
+        switch command.Name {
+        case "PutAppend":
+            args := command.Args.(PutAppendArgs)
+            
+            if !kv.isInGroup(args.Key) {
+                Err = ErrWrongGroup
+                return value, Err
+            }
+
+        case "Get":
             args := command.Args.(GetArgs)
+
+            if !kv.isInGroup(args.Key) {
+                Err = ErrWrongGroup
+                return value, Err
+            }
 
             // get value for Get command
             if v, exist := kv.kvStore[args.Key]; exist {
@@ -542,7 +556,7 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
 
     kv.mu.Lock()
 
-    // if a old Migrateshards received, reply OK
+    // if an old Migrateshards received, reply OK
     if kv.currentConfig.Num > args.Num {
         reply.Err = OK
         kv.mu.Unlock()
@@ -934,5 +948,6 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
         }
     }(kv)
 
+    DPrintf("[kvserver: %v @ %v]Start!\n", kv.me, kv.gid)
 	return kv
 }
