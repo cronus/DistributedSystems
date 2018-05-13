@@ -281,7 +281,7 @@ func (kv *ShardKV) applyCmd(command Op) (string, Err) {
         }
 
         _, isLeader := kv.rf.GetState()
-        if isLeader {
+        if isLeader && !args.Sent[0]{
             // send to other groups
             for gid, shards := range args.SendMap {
 
@@ -344,6 +344,7 @@ func (kv *ShardKV) applyCmd(command Op) (string, Err) {
         }
         DPrintf("[kvserver: %v @ %v]After delete sent shards, kvStore: %v\n", kv.me, kv.gid, kv.kvStore)
 
+        args.Sent[0] = true
         
     case "MigrateShards":
         //if num, ok := kv.rcvdKVCmd[command.ClerkId]; ok && num == command.CommandNum {
@@ -556,7 +557,9 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
 
     kv.mu.Lock()
 
-    // if an old Migrateshards received, reply OK
+    // if an old Migrateshards received, 
+    // means the sender didn't reply the finish reply from this group
+    // reply OK
     if kv.currentConfig.Num > args.Num {
         reply.Err = OK
         kv.mu.Unlock()
@@ -602,7 +605,7 @@ func (kv *ShardKV) MigrateShards(args *MigrateShardsArgs, reply *MigrateShardsRe
 // function to send shards to other groups
 func (kv *ShardKV) sendMigrateShards(tGid int, args *MigrateShardsArgs) {
 
-    DPrintf("[kvserver: %v @ %v]sendMirgareShards args: %v", kv.me, kv.gid, args)
+    DPrintf("[kvserver: %v @ %v]sendMigrateShards args: %v", kv.me, kv.gid, args)
     
     servers := kv.currentConfig.Groups[tGid]
     // find all the key/value pairs related to the migration shards
@@ -931,6 +934,8 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
                 if isChanged {
                     // send reconfig to unerlying Raft
                     args                 := &reconfigArgs{}
+                    args.Sent             = make([]bool, 1)
+                    args.Sent[0]          = false
                     args.Config           = config
                     args.SendMap          = sendMap
                     args.ExpectShardsList = expectShardsList
