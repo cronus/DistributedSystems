@@ -72,7 +72,7 @@ Raft, a fault tolerant system and a sharded kv store building on it
                          /        /|\
                         /          |
              API:      /        API: reconfig
-   kvserver- MigrateShards                                |
+   kvserver- MigrateShards         |
                                    |
                           --------------------- 
                           |                   |
@@ -80,3 +80,40 @@ Raft, a fault tolerant system and a sharded kv store building on it
                           |                   |
                           ---------------------
 2. Re-configruation
+
+    1. Every shard kv server periodically polls shard master for the configuration just 1 greater than its current configuration
+    2. Compare the return the configuration from shard master, if it's the same, do nothing.
+    3. If get a new configuration, which means the kv server should update its configuration to "current configuration + 1"
+       then the kv server calls config command, feed it to Raft with the arguments:
+
+	    Sent: indicate whether the MigrateShards commands have been sent to other groups
+	    Config: new configruation
+	    SendMap: the send map to other groups
+	    ExpectShardsList: expected shards, receiving from other groups
+
+    4. When the re-config command is committed from raft, applying it to kv server. The command apply function will do the following:
+
+	    i. If ExpectShardsList is not empty, set the kv server inTransition equals true. This will block: 
+            a. polling configuration from master
+            b. Client operation commands (Get, Put, Append) from being applied to the kvserver
+	            When the command is committed, during apply command phase, if the inTransition is true, 
+                meaning the kv server is waiting for some shards from other kv server group, 
+                the kv server needs to check whether the key is in ExpectShardsList, if true, return ErrWrongGroup to client
+
+	    ii. If the kv server is the leader and Sent if false (MigrateShards commands haven't been sent), 
+        send MigrateShards to other kv server groups; if it is true (generally in log replay phase), the MigrateShards command will not be sent)
+
+	    iii. Remove the k/v stored in the kv server
+
+	    iv. Set the Sent to true 
+
+    5. When the inTransition is set to true, the kv server will block client operations that contains keys not received. 
+       The kv server will wait for MigrateShards command from other kv server group.
+
+    6. When the kv server receives necessary MigrateShards command, it will merge the k/v to its kv store, and duplicated commands status. 
+       Furthermore, it will remove the shards in this MigrateShards command from its expect shards list. When the list is empty, inTransition will be set to false.
+
+    After that, a re-configuration is done. 
+
+
+
