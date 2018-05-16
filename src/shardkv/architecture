@@ -27,7 +27,9 @@ Raft, a fault tolerant system and a sharded kv store building on it
 
 3. Shardmaster and sharded kv store
 
-    shard master
+                                   *************************
+                                   ***** shard master ******
+                                   *************************
                                                                       -----------
                                                                       |         |
                                                                       -----------
@@ -47,38 +49,35 @@ Raft, a fault tolerant system and a sharded kv store building on it
    client ---| Leave| ---> |   Command Feed    | -----Start()----->|       Raft       | ---- applyCh -->|   Command Apply   |
              | Move |      |                   |                   |                  |                 |                   |
              | Query|      ---------------------                   --------------------                 ---------------------
-             |______|
-
-    sharded kv
-                                                                      -----------
-                                                                      |         |
-                                                                      -----------
-                                                                      |    .    |
-                                  ----------- produce --------------->|    .    |<------ consume -----------------
-                                  |                                   |    .    |                                |
-                                  |                                   -----------                                |
-                                  |                                   |         |                                |
-                                  |                                   -----------                                |
-                                  |                            return message channel fifo                       |
-                                  |                                                                              |
-                                  |                                                                              |
-                                  |                                                                              |
-             _________            |                                                                              |
+             |______|      /|
+                          /
+                         /        ********************************
+                        /         ******* sharded kv server ******
+                       /          ********************************    -----------
+              Query configuration                                     |         |
+                     /                                                -----------
+                    /                                                 |    .    |
+                   /              ----------- produce --------------->|    .    |<------ consume -----------------
+                  /               |                                   |    .    |                                |
+          ---------------         |                                   -----------                                |
+          | poll master |         |                                   |         |                                |
+          ---------------         |                                   -----------                                |
+                      \           |                            return message channel fifo                       |
+                       \          |                                                                              |
+                    reconfig      |                                                                              |
+                         \        |                                                                              |
+             _________   _\|      |                                                                              |
              |API:   |     ---------------------                   --------------------                 ---------------------
              | Get   |     |                   |                   |                  |                 |                   |
    client ---| Put   |---> |   Command Feed    | -----Start()----->|       Raft       | ---- applyCh -->|   Command Apply   |
              | Append|     |                   |                   |                  |                 |                   |
              |_______|     ---------------------                   --------------------                 ---------------------
-                         /        /|\
-                        /          |
-             API:      /        API: reconfig
-   kvserver- MigrateShards         |
-                                   |
-                          --------------------- 
-                          |                   |
-                          |   polling master  |
-                          |                   |
-                          ---------------------
+                         /        
+                        /          
+             API:      /        
+   kvserver- MigrateShards         
+                                  
+
 2. Re-configruation
 
     1. Every shard kv server periodically polls shard master for the configuration just 1 greater than its current configuration
